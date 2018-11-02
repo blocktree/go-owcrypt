@@ -1,0 +1,5 @@
+[gerrit]
+host=192.168.32.108 
+port=29418
+project=go-owcrypt.git
+defaultbranch=master
