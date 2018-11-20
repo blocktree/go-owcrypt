@@ -27,7 +27,7 @@ fi
 
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Load hooks
 mkdir -p .git/hooks
-gitdir=$(git rev-parse --git-dir); scp -p -P 29418 $USERNAME@192.168.32.108:hooks/commit-msg ${gitdir}/hooks/
+gitdir=$(git rev-parse --git-dir); scp -p -P 29418 $USERNAME@47.107.241.104:hooks/commit-msg ${gitdir}/hooks/
 
 if [ $? != 0 ]; then
 	echo ""
@@ -37,7 +37,7 @@ fi
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Edit .git/config
-git config remote.gerrit.url ssh://$USERNAME@192.168.32.108:29418/$PROJECT_NAME.git
+git config remote.gerrit.url ssh://$USERNAME@47.107.241.104:29418/$PROJECT_NAME.git
 git config remote.gerrit.fetch +refs/heads/*:refs/remotes/gerrit/*
 git config remote.gerrit.push refs/heads/*:refs/for/*
 
