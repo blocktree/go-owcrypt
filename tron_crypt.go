@@ -192,7 +192,13 @@ import "math/big"
 			sign :=s.Cmp(halfcurveorder)
 			if sign > 0{
 			  s.Sub(curveOrder,s)
-			  copy(sig[32:64],s.Bytes())
+			  sByte:=s.Bytes()
+		      if len(sByte) < 32{
+			     for i:=0;i<32-len(sByte);i++{
+				     sByte = append([]byte{0x00}, sByte...)
+			  }
+		  }
+		      copy(sig[32:64],sByte)
 			  recid ^=1
 			}
 			copy(signature[:64],sig[:])
