@@ -310,6 +310,9 @@ func KeyAgreement_responder_step2(Sinitiator []byte, Sresponder []byte, typeChoo
 
 func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 	var size uint16
+	if typeChoose == ECC_CURVE_ED25519_EXTEND {
+		typeChoose = ECC_CURVE_ED25519
+	}
 	if typeChoose == ECC_CURVE_ED25519 {
 		size = 32
 	} else {
