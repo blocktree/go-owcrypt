@@ -162,6 +162,7 @@ package owcrypt
 // #include "ref10_zeroize.c"
 import "C"
 import (
+	"errors"
 	"unsafe"
 )
 
@@ -542,4 +543,26 @@ func pbkdf2_hmac_sha512(pw []byte, salt []byte, iterations uint32, outlen uint32
 	out := (*C.uchar)(unsafe.Pointer(&ret[0]))
 	C.pbkdf2_hamc_sha512(PassWord, C.uint(len(pw)), Salt, C.uint(len(salt)), C.uint(iterations), out, C.uint(outlen))
 	return ret[:]
+}
+
+/* functions to convert between X25519 point and ED25519 point*/
+func CURVE25519_convert_X_to_Ed(x []byte) ([]byte, error) {
+	ret := make([]byte, 32)
+	x25519 := (*C.uchar)(unsafe.Pointer(&x[0]))
+	ed25519 := (*C.uchar)(unsafe.Pointer(&ret[0]))
+	if C.CURVE25519_convert_X_to_Ed(ed25519, x25519) == 1 {
+		return ret, nil
+	}
+	return nil, errors.New("Invalid x25519 point to convert!")
+}
+
+func CURVE25519_convert_Ed_to_X(ed []byte) ([]byte, error) {
+	ret := make([]byte, 32)
+	ed25519 := (*C.uchar)(unsafe.Pointer(&ed[0]))
+	x25519 := (*C.uchar)(unsafe.Pointer(&ret[0]))
+	if C.CURVE25519_convert_Ed_to_X(x25519, ed25519) == 1 {
+		return ret, nil
+	}
+	return nil, errors.New("Invalid ed25519 point to convert!")
+
 }
