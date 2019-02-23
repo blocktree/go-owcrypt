@@ -407,7 +407,7 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 	if typeChoose == ECC_CURVE_ED25519_EXTEND {
 		typeChoose = ECC_CURVE_ED25519
 	}
-	if typeChoose == ECC_CURVE_ED25519 {
+	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_ED25519_REF10 {
 		size = 32
 	} else {
 		size = 64
@@ -418,7 +418,7 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 	k := (*C.uchar)(unsafe.Pointer(&scalar[0]))
 
 	C.ECC_point_mul_baseG(k, pointOut, C.uint(typeChoose))
-	if typeChoose == ECC_CURVE_ED25519 {
+	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_ED25519_REF10 {
 		return ret
 	}
 	return PointCompress(ret[:], typeChoose)
