@@ -392,6 +392,53 @@ func KeyAgreement_responder_step1(IDinitiator []byte,
 	return key, tmpPubkeyResponder, Sinner, Souter, ret
 }
 
+func KeyAgreement_responder_ElGamal_step1(IDinitiator []byte,
+	IDinitiator_len uint16,
+	IDresponder []byte,
+	IDresponder_len uint16,
+	prikeyResponder []byte,
+	pubkeyResponder []byte,
+	pubkeyInitiator []byte,
+	tmpPubkeyInitiator []byte,
+	keylen uint16,
+	random []byte,
+	typeChoose uint32) (key, tmpPubkeyResponder, Sinner, Souter []byte, ret uint16) {
+	//------------------------------------------------------------//
+	key = make([]byte, keylen)
+	tmpPubkeyResponder = make([]byte, 64)
+	Sinner = make([]byte, 32)
+	Souter = make([]byte, 32)
+	idInit := (*C.uchar)(unsafe.Pointer(&IDinitiator[0]))
+	idResp := (*C.uchar)(unsafe.Pointer(&IDresponder[0]))
+	priResp := (*C.uchar)(unsafe.Pointer(&prikeyResponder[0]))
+	pubResp := (*C.uchar)(unsafe.Pointer(&pubkeyResponder[0]))
+	pubInit := (*C.uchar)(unsafe.Pointer(&pubkeyInitiator[0]))
+	tmpPubResp := (*C.uchar)(unsafe.Pointer(&tmpPubkeyResponder[0]))
+	tmpPubInit := (*C.uchar)(unsafe.Pointer(&tmpPubkeyInitiator[0]))
+	sInner := (*C.uchar)(unsafe.Pointer(&Sinner[0]))
+	sOuter := (*C.uchar)(unsafe.Pointer(&Souter[0]))
+	result := (*C.uchar)(unsafe.Pointer(&key[0]))
+	tmpPriResp := (*C.uchar)(unsafe.Pointer(&random[0]))
+
+	ret = uint16(C.ECC_key_exchange_responder_ElGamal_step1(idInit,
+		C.ushort(IDinitiator_len),
+		idResp,
+		C.ushort(IDresponder_len),
+		priResp,
+		pubResp,
+		pubInit,
+		tmpPubResp,
+		tmpPubInit,
+		sInner,
+		sOuter,
+		C.ushort(keylen),
+		result,
+		tmpPriResp,
+		C.uint(typeChoose)))
+
+	return key, tmpPubkeyResponder, Sinner, Souter, ret
+}
+
 func KeyAgreement_responder_step2(Sinitiator []byte, Sresponder []byte, typeChoose uint32) uint16 {
 	sInit := (*C.uchar)(unsafe.Pointer(&Sinitiator[0]))
 	sResp := (*C.uchar)(unsafe.Pointer(&Sresponder[0]))
