@@ -163,7 +163,6 @@ package owcrypt
 import "C"
 import (
 	"errors"
-	"fmt"
 	"unsafe"
 )
 
@@ -494,7 +493,8 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 func GetCurveOrder(typeChoose uint32) []byte {
 	ret := [32]byte{}
 	order := (*C.uchar)(unsafe.Pointer(&ret[0]))
-	fmt.Println(C.ECC_get_curve_order(order, C.uint(typeChoose)))
+	C.ECC_get_curve_order(order, C.uint(typeChoose))
+	C.ECC_get_curve_order(order, C.uint(typeChoose))
 	return ret[:]
 }
 

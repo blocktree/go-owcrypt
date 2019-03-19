@@ -392,6 +392,16 @@ func Test_getcurveorder(t *testing.T) {
 		fmt.Println("ed25519获取失败！")
 		return
 	}
+
+	ret = GetCurveOrder(ECC_CURVE_ED25519_NORMAL)
+	sret = hex.EncodeToString(ret[:])
+	if sret == "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed" {
+		fmt.Println("曲线ed25519的阶是：")
+		fmt.Println(hex.EncodeToString(ret[:]))
+	} else {
+		fmt.Println("ed25519获取失败！")
+		return
+	}
 }
 
 func Test_pointcompress(t *testing.T) {
