@@ -163,6 +163,7 @@ package owcrypt
 import "C"
 import (
 	"errors"
+	"fmt"
 	"unsafe"
 )
 
@@ -196,9 +197,9 @@ const (
 	ECC_CURVE_PRIMEV1        = ECC_CURVE_SECP256R1
 	ECC_CURVE_NIST_P256      = ECC_CURVE_SECP256R1
 	ECC_CURVE_SM2_STANDARD   = uint32(0xECC00002)
-	ECC_CURVE_ED25519        = uint32(0xECC00003)
-	ECC_CURVE_ED25519_EXTEND = uint32(0xECC00004)
-	ECC_CURVE_ED25519_REF10  = uint32(0xECC00005)
+	ECC_CURVE_ED25519_NORMAL = uint32(0xECC00003)
+	ECC_CURVE_ED25519        = uint32(0xECC00004)
+	ECC_CURVE_X25519         = uint32(0xECC00005)
 
 	//签名流程中的随机数是外部传入的标志位置
 	NOUNCE_OUTSIDE_FLAG = uint32(1 << 8)
@@ -215,7 +216,7 @@ const (
 
 func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	var keylen uint16
-	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_ED25519_REF10 {
+	if typeChoose == ECC_CURVE_ED25519_NORMAL || typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_X25519 {
 		keylen = 32
 	} else {
 		keylen = 64
@@ -451,10 +452,7 @@ func KeyAgreement_responder_step2(Sinitiator []byte, Sresponder []byte, typeChoo
 
 func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 	var size uint16
-	if typeChoose == ECC_CURVE_ED25519_EXTEND {
-		typeChoose = ECC_CURVE_ED25519
-	}
-	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_ED25519_REF10 {
+	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_X25519 {
 		size = 32
 	} else {
 		size = 64
@@ -465,7 +463,7 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 	k := (*C.uchar)(unsafe.Pointer(&scalar[0]))
 
 	C.ECC_point_mul_baseG(k, pointOut, C.uint(typeChoose))
-	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_ED25519_REF10 {
+	if typeChoose == ECC_CURVE_ED25519 || typeChoose == ECC_CURVE_X25519 {
 		return ret
 	}
 	return PointCompress(ret[:], typeChoose)
@@ -496,7 +494,7 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 func GetCurveOrder(typeChoose uint32) []byte {
 	ret := [32]byte{}
 	order := (*C.uchar)(unsafe.Pointer(&ret[0]))
-	C.ECC_get_curve_order(order, C.uint(typeChoose))
+	fmt.Println(C.ECC_get_curve_order(order, C.uint(typeChoose)))
 	return ret[:]
 }
 

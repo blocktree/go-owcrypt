@@ -34,7 +34,7 @@ ___
                             ECC_CURVE_PRIMEV1(0xECC00001)
                             ECC_CURVE_NIST_P256(0xECC00001)
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
-                            ECC_CURVE_ED25519(0xECC00003)
+                            ECC_CURVE_ED25519_NORMAL(0xECC00003)
 出参:    
         pubkey    : 公钥
 返回值： uint16类型，如下：
@@ -58,7 +58,7 @@ ___
                             ECC_CURVE_PRIMEV1(0xECC00001)
                             ECC_CURVE_NIST_P256(0xECC00001)
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
-                            ECC_CURVE_ED25519(0xECC00003)
+                            ECC_CURVE_ED25519_NORMAL(0xECC00003)
 出参：
         signature  ： 签名值
 返回值： 
@@ -89,7 +89,7 @@ ___
                             ECC_CURVE_PRIMEV1(0xECC00001)
                             ECC_CURVE_NIST_P256(0xECC00001)
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
-                            ECC_CURVE_ED25519(0xECC00003)
+                            ECC_CURVE_ED25519_NORMAL(0xECC00003)
 出参：   无
 返回值：
         uint16类型， 如下：
@@ -114,7 +114,7 @@ ___
                             ECC_CURVE_PRIMEV1(0xECC00001)
                             ECC_CURVE_NIST_P256(0xECC00001)
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
-                            ECC_CURVE_ED25519(0xECC00003)
+                            ECC_CURVE_ED25519_NORMAL(0xECC00003)
 出参：  
         cipher     ： 密文
 返回值：
@@ -139,7 +139,7 @@ ___
                             ECC_CURVE_PRIMEV1(0xECC00001)
                             ECC_CURVE_NIST_P256(0xECC00001)
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
-                            ECC_CURVE_ED25519(0xECC00003)
+                            ECC_CURVE_ED25519_NORMAL(0xECC00003)
 出参： 
         plain      ： 明文
 返回值：
