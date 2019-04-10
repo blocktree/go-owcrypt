@@ -594,7 +594,7 @@ void ecurve_multn(owcrypt *pr_owc, int n,OWC_BN *y,owc_point **x,owc_point *w)
     owc_free(G);
 }
 
-static BOOL ecurve_add_sub(owcrypt *pr_owc, owc_point *P,owc_point *Q,owc_point *PP,owc_point *PM)
+BOOL ecurve_add_sub(owcrypt *pr_owc, owc_point *P,owc_point *Q,owc_point *PP,owc_point *PM)
 {
     OWC_BN t1,t2,lam;
 

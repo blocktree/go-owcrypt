@@ -17,10 +17,7 @@
 #include "secp256k1.h"
 #include "secp256r1.h"
 #include "sm2.h"
-#include "ED25519.h"
-#include "ref10_ge.h"
-#include "ref10_keygen.h"
-#include "ref10_curve_sigs.h"
+#include "CURVE25519.h"
 
 static uint8_ow randNum[32]={0};
 uint16_ow ECC_preprocess_randomnum(uint8_ow *rand)
@@ -53,21 +50,21 @@ uint16_ow ECC_genPubkey(uint8_ow *prikey, uint8_ow *pubkey, uint32_ow type)
             ret = sm2_std_genPubkey(prikey, pubkey);
         }
             break;
-        case ECC_CURVE_ED25519_NORMAL:
+        case ECC_CURVE_CURVE25519:
         {
-            ED25519_genPubkey(prikey, pubkey);
+            CURVE25519_genPubkey(prikey, pubkey);
             ret = SUCCESS;
         }
             break;
         case ECC_CURVE_ED25519:
         {
-            ED25519_point_mul_base(prikey, pubkey);
+            ED25519_genPubkey(prikey, pubkey);
             ret = SUCCESS;
         }
             break;
         case ECC_CURVE_X25519:
         {
-            REF10_curve25519_keygen(pubkey, prikey);
+            X25519_genPubkey(pubkey, prikey);
             ret = SUCCESS;
         }
             break;
@@ -196,9 +193,9 @@ uint16_ow ECC_sign(uint8_ow *prikey, uint8_ow *ID, uint16_ow IDlen, uint8_ow *me
             
         }
             break;
-        case ECC_CURVE_ED25519_NORMAL:
+        case ECC_CURVE_CURVE25519:
         {
-            ED25519_Sign(prikey, message, message_len, sig, 0);
+            CURVE25519_Sign(prikey, message, message_len, sig, 0);
             ret = SUCCESS;
         }
             break;
@@ -222,7 +219,7 @@ uint16_ow ECC_sign(uint8_ow *prikey, uint8_ow *ID, uint16_ow IDlen, uint8_ow *me
             sha512_update(&sha512, prikey, 32);
             sha512_update(&sha512, message, message_len);
             sha512_final(&sha512, random);
-            if(0 != REF10_curve25519_sign(sig, prikey, message, message_len, random))
+            if(0 != X25519_Sign(sig, prikey, message, message_len, random))
             {
                 free(random);
                 ret = FAILURE;
@@ -294,7 +291,7 @@ uint16_ow ECC_verify(uint8_ow *pubkey, uint8_ow *ID, uint16_ow IDlen, uint8_ow *
             
         }
             break;
-        case ECC_CURVE_ED25519_NORMAL:
+        case ECC_CURVE_CURVE25519:
         case ECC_CURVE_ED25519:
         {
             ret = ED25519_Verify(pubkey, message, message_len, sig);
@@ -307,7 +304,7 @@ uint16_ow ECC_verify(uint8_ow *pubkey, uint8_ow *ID, uint16_ow IDlen, uint8_ow *
              const unsigned char* curve25519_pubkey,
              const unsigned char* msg, const unsigned long msg_len)
              */
-            if(0 != REF10_curve25519_verify(sig, pubkey, message, message_len))
+            if(0 != X25519_Verify(sig, pubkey, message, message_len))
             {
                 ret = FAILURE;
             }else{
@@ -610,7 +607,7 @@ uint16_ow ECC_point_mul_baseG(uint8_ow *scalar, uint8_ow *point, uint32_ow type)
             return SUCCESS;
             break;
         case ECC_CURVE_X25519:
-            REF10_curve25519_keygen(point, scalar);
+            X25519_genPubkey(point, scalar);
             return SUCCESS;
         default:
             return ECC_WRONG_TYPE;
@@ -700,7 +697,7 @@ uint16_ow ECC_get_curve_order(uint8_ow *order, uint32_ow type)
             sm2_std_get_order(order);
         }
             break;
-        case ECC_CURVE_ED25519_NORMAL:
+        case ECC_CURVE_CURVE25519:
         case ECC_CURVE_ED25519:
         {
             ED25519_get_order(order);
@@ -781,17 +778,16 @@ uint16_ow ECC_recover_pubkey(uint8_ow *sig,uint32_ow sig_len,uint8_ow *msg,uint3
 /*
  @functions: convert between x25519 point and ed25519 point
  */
-#include "ref10_gen_x.h"
 uint16_ow CURVE25519_convert_X_to_Ed(uint8_ow *ed, uint8_ow *x)
 {
-    if(REF10_convert_X_to_Ed(ed, x) != 0)
+    if(convert_X_to_Ed(ed, x) != 0)
         return FAILURE;
     return SUCCESS;
 }
 
 uint16_ow CURVE25519_convert_Ed_to_X(uint8_ow *x, uint8_ow *ed)
 {
-    if(REF10_convert_Ed_to_X(x, ed) != 0)
+    if(convert_Ed_to_X(x, ed) != 0)
         return FAILURE;
     return SUCCESS;
 }

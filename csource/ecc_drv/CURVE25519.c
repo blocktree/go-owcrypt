@@ -13,7 +13,7 @@
  * GNU Lesser General Public License for more details.
  */
 
-#include "ED25519.h"
+#include "CURVE25519.h"
 
 static const uint8_ow curve_ed25519_n[32] = {0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x14,0xDE,0xF9,0xDE,0xA2,0xF7,0x9C,0xD6,0x58,0x12,0x63,0x1A,0x5C,0xF5,0xD3,0xED};
 
@@ -230,8 +230,6 @@ static int fe_isnegative(const fe f)
     fe_tobytes(s, f);
     return s[0] & 1;
 }
-
-
 
 static void ge_p2_0(ge_p2 *h)
 {
@@ -903,6 +901,22 @@ static void ge_p3_dbl(ge_p1p1 *r, const ge_p3 *p)
     ge_p2 q;
     ge_p3_to_p2(&q, p);
     ge_p2_dbl(r, &q);
+}
+
+void ge_p3_to_montx(fe u, const ge_p3 *ed)
+{
+/* 
+     u = (y + 1) / (1 - y)
+     or
+     u = (y + z) / (z - y)
+
+     NOTE: y=1 is converted to u=0 since fe_invert is mod-exp
+*/
+    fe y_plus_one, one_minus_y, inv_one_minus_y;
+    fe_add(y_plus_one, ed->Y, ed->Z);
+    fe_sub(one_minus_y, ed->Z, ed->Y);  
+    fe_invert(inv_one_minus_y, one_minus_y);
+    fe_mul(u, y_plus_one, inv_one_minus_y);
 }
 
 static void ge_madd(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q)
@@ -3526,6 +3540,23 @@ static void sc_muladd(uint8_ow *s, const uint8_ow *a, const uint8_ow *b, const u
     s[31] = (uint8_ow)(s11 >> 17);
 }
 
+void X25519_genPubkey(unsigned char* x25519_pubkey_out,
+                       const unsigned char* x25519_privkey_in)
+{
+ /* Perform a fixed-base multiplication of the Edwards base point,
+     (which is efficient due to precalculated tables), then convert
+     to the Curve25519 montgomery-format public key.
+
+     NOTE: y=1 is converted to u=0 since fe_invert is mod-exp
+  */
+
+    ge_p3 ed; /* Ed25519 pubkey point */
+    fe u;
+    ge_scalarmult_base(&ed, x25519_privkey_in);
+    ge_p3_to_montx(u, &ed);
+    fe_tobytes(x25519_pubkey_out, u);
+}
+
 //point = [scalar]*G
 //all in little-endian
 void ED25519_point_mul_base(uint8_ow *scalar, uint8_ow *point)
@@ -3567,7 +3598,7 @@ uint8_ow ED25519_point_add_mul_base(uint8_ow *point1, uint8_ow *scalar, uint8_ow
 }
 
 
-void ED25519_genPubkey(uint8_ow *prikey, uint8_ow *pubkey)
+void CURVE25519_genPubkey(uint8_ow *prikey, uint8_ow *pubkey)
 {
     uint8_ow *az = NULL;
     ge_p3 A;
@@ -3585,7 +3616,7 @@ void ED25519_genPubkey(uint8_ow *prikey, uint8_ow *pubkey)
     free(az);
 }
 
-void ED25519_Sign(uint8_ow *prikey, uint8_ow *message, uint16_ow message_len, uint8_ow *sig, uint32_ow type)
+void CURVE25519_Sign(uint8_ow *prikey, uint8_ow *message, uint16_ow message_len, uint8_ow *sig, uint32_ow type)
 {
     uint8_ow *az = NULL, *nonce = NULL, *hram = NULL, *pubkey = NULL;
     ge_p3 R;
@@ -3609,7 +3640,7 @@ void ED25519_Sign(uint8_ow *prikey, uint8_ow *message, uint16_ow message_len, ui
     }
     else
     {
-        ED25519_genPubkey(prikey, pubkey);
+        CURVE25519_genPubkey(prikey, pubkey);
         sha512_init(hash_ctx);
         sha512_update(hash_ctx, prikey, 32);
         sha512_final(hash_ctx, az);
@@ -3618,7 +3649,6 @@ void ED25519_Sign(uint8_ow *prikey, uint8_ow *message, uint16_ow message_len, ui
         az[31] &= 63;
         az[31] |= 64;
     }
-    
     
     sha512_init(hash_ctx);
     sha512_update(hash_ctx, az + 32, 32);
@@ -3645,8 +3675,105 @@ void ED25519_Sign(uint8_ow *prikey, uint8_ow *message, uint16_ow message_len, ui
     free(hash_ctx);
 }
 
+void zeroize(unsigned char* b, size_t len)
+{
+  size_t count = 0;
+  volatile unsigned char *p = b;
 
-uint16_ow ED25519_Verify(uint8_ow *pubkey, uint8_ow *message, uint16_ow message_len, uint8_ow *sig)
+  for (count = 0; count < len; count++)
+    p[count] = 0;
+}
+
+#define ZEROIZE_STACK_SIZE 1024
+void zeroize_stack(void)
+{
+  unsigned char m[ZEROIZE_STACK_SIZE];
+  zeroize(m, ZEROIZE_STACK_SIZE);
+}
+
+
+int crypto_sign_modified(
+  unsigned char *sm,
+  const unsigned char *m,unsigned long long mlen,
+  const unsigned char *sk, const unsigned char* pk,
+  const unsigned char* random
+)
+{
+    SHA512_CTX *hash_ctx = NULL;
+    hash_ctx = calloc(1, sizeof(SHA512_CTX));
+    unsigned char nonce[64];
+    unsigned char hram[64];
+    ge_p3 R;
+    int count=0;
+
+    memmove(sm + 64,m,mlen);
+    memmove(sm + 32,sk,32); /* NEW: Use privkey directly for nonce derivation */
+
+    /* NEW : add prefix to separate hash uses - see .h */
+    sm[0] = 0xFE;
+    for (count = 1; count < 32; count++)
+    sm[count] = 0xFF;
+
+    /* NEW: add suffix of random data */
+    memmove(sm + mlen + 64, random, 64);
+    sha512_init(hash_ctx);
+    sha512_update(hash_ctx, sm, mlen + 128);
+    sha512_final(hash_ctx, nonce);
+    memmove(sm + 32,pk,32);
+
+    x25519_sc_reduce(nonce);
+
+    ge_scalarmult_base(&R,nonce);
+    ge_p3_tobytes(sm,&R);
+    sha512_init(hash_ctx);
+    sha512_update(hash_ctx, sm, mlen + 64);
+    sha512_final(hash_ctx, hram);
+    x25519_sc_reduce(hram);
+    sc_muladd(sm + 32,hram,sk,nonce); /* NEW: Use privkey directly */
+
+    /* Erase any traces of private scalar or
+        nonce left in the stack from sc_muladd */
+    zeroize_stack();
+    zeroize(nonce, 64);
+    free(hash_ctx);
+    return 0;
+}
+
+
+int X25519_Sign(unsigned char* signature_out,
+                    const unsigned char* x25519_privkey,
+                    const unsigned char* msg, const unsigned long msg_len,
+                    const unsigned char* random)
+{
+    ge_p3 ed_pubkey_point; /* Ed25519 pubkey point */
+    unsigned char ed_pubkey[32]; /* Ed25519 encoded pubkey */
+    unsigned char *sigbuf; /* working buffer */
+    unsigned char sign_bit = 0;
+
+    if ((sigbuf = malloc(msg_len + 128)) == 0) {
+    memset(signature_out, 0, 64);
+    return -1;
+    }
+
+    /* Convert the Curve25519 privkey to an Ed25519 public key */
+    ge_scalarmult_base(&ed_pubkey_point, x25519_privkey);
+    ge_p3_tobytes(ed_pubkey, &ed_pubkey_point);
+    sign_bit = ed_pubkey[31] & 0x80;
+
+    /* Perform an Ed25519 signature with explicit private key */
+    crypto_sign_modified(sigbuf, msg, msg_len, x25519_privkey,
+                        ed_pubkey, random);
+    memmove(signature_out, sigbuf, 64);
+
+    /* Encode the sign bit into signature (in unused high bit of S) */
+    signature_out[63] &= 0x7F; /* bit should be zero already, but just in case */
+    signature_out[63] |= sign_bit;
+
+    free(sigbuf);
+    return 0;
+}
+
+uint16_ow CURVE25519_Verify(uint8_ow *pubkey, uint8_ow *message, uint16_ow message_len, uint8_ow *sig)
 {
     uint8_ow ret = 0;
     ge_p3 A;
@@ -3697,4 +3824,269 @@ void ED25519_get_order(uint8_ow *order)
     memcpy(order, curve_ed25519_n, ECC_LEN);
 }
 
+/* Const-time comparison from SUPERCOP, but here it's only used for 
+   signature verification, so doesn't need to be const-time.  But
+   copied the nacl version anyways. */
+int crypto_verify_32_ref(const unsigned char *x, const unsigned char *y)
+{
+  unsigned int differentbits = 0;
+#define X_COMPARE_F(i) differentbits |= x[i] ^ y[i];
+  X_COMPARE_F(0)
+  X_COMPARE_F(1)
+  X_COMPARE_F(2)
+  X_COMPARE_F(3)
+  X_COMPARE_F(4)
+  X_COMPARE_F(5)
+  X_COMPARE_F(6)
+  X_COMPARE_F(7)
+  X_COMPARE_F(8)
+  X_COMPARE_F(9)
+  X_COMPARE_F(10)
+  X_COMPARE_F(11)
+  X_COMPARE_F(12)
+  X_COMPARE_F(13)
+  X_COMPARE_F(14)
+  X_COMPARE_F(15)
+  X_COMPARE_F(16)
+  X_COMPARE_F(17)
+  X_COMPARE_F(18)
+  X_COMPARE_F(19)
+  X_COMPARE_F(20)
+  X_COMPARE_F(21)
+  X_COMPARE_F(22)
+  X_COMPARE_F(23)
+  X_COMPARE_F(24)
+  X_COMPARE_F(25)
+  X_COMPARE_F(26)
+  X_COMPARE_F(27)
+  X_COMPARE_F(28)
+  X_COMPARE_F(29)
+  X_COMPARE_F(30)
+  X_COMPARE_F(31)
+  return (1 & ((differentbits - 1) >> 8)) - 1;
+}
+
+int ge_frombytes_negate_vartime(ge_p3 *h,const unsigned char *s)
+{
+  fe u;
+  fe v;
+  fe v3;
+  fe vxx;
+  fe check;
+
+  fe_frombytes(h->Y,s);
+  fe_1(h->Z);
+  fe_sq(u,h->Y);
+  fe_mul(v,u,d);
+  fe_sub(u,u,h->Z);       /* u = y^2-1 */
+  fe_add(v,v,h->Z);       /* v = dy^2+1 */
+
+  fe_sq(v3,v);
+  fe_mul(v3,v3,v);        /* v3 = v^3 */
+  fe_sq(h->X,v3);
+  fe_mul(h->X,h->X,v);
+  fe_mul(h->X,h->X,u);    /* x = uv^7 */
+
+  fe_pow22523(h->X,h->X); /* x = (uv^7)^((q-5)/8) */
+  fe_mul(h->X,h->X,v3);
+  fe_mul(h->X,h->X,u);    /* x = uv^3(uv^7)^((q-5)/8) */
+
+  fe_sq(vxx,h->X);
+  fe_mul(vxx,vxx,v);
+  fe_sub(check,vxx,u);    /* vx^2-u */
+  if (fe_isnonzero(check)) {
+    fe_add(check,vxx,u);  /* vx^2+u */
+    if (fe_isnonzero(check)) return -1;
+    fe_mul(h->X,h->X,sqrtm1);
+  }
+
+  if (fe_isnegative(h->X) == (s[31] >> 7))
+    fe_neg(h->X,h->X);
+
+  fe_mul(h->T,h->X,h->Y);
+  return 0;
+}
+
+
+
+int crypto_sign_open_modified(
+  unsigned char *m,
+  const unsigned char *sm,unsigned long long smlen,
+  const unsigned char *pk
+)
+{
+    SHA512_CTX *hash_ctx = NULL;
+    unsigned char pkcopy[32];
+    unsigned char rcopy[32];
+    unsigned char scopy[32];
+    unsigned char h[64];
+    unsigned char rcheck[32];
+    ge_p3 A;
+    ge_p2 R;
+
+    hash_ctx = calloc(1, sizeof(SHA512_CTX));
+    if (smlen < 64) goto badsig;
+    if (sm[63] & 224) goto badsig; /* strict parsing of s */
+    if (ge_frombytes_negate_vartime(&A,pk) != 0) goto badsig;
+
+    memmove(pkcopy,pk,32);
+    memmove(rcopy,sm,32);
+    memmove(scopy,sm + 32,32);
+
+    memmove(m,sm,smlen);
+    memmove(m + 32,pkcopy,32);
+    sha512_init(hash_ctx);
+    sha512_update(hash_ctx, m, smlen);
+    sha512_final(hash_ctx, h);
+    x25519_sc_reduce(h);
+
+    ge_double_scalarmult_vartime(&R,h,&A,scopy);
+    ge_tobytes(rcheck,&R);
+
+    if (crypto_verify_32_ref(rcheck,rcopy) == 0) {
+        free(hash_ctx);
+    return 0;
+    }
+
+badsig:
+    free(hash_ctx);
+    return -1;
+}
+
+void fe_montx_to_edy(fe y, const fe u)
+{
+  /* 
+     y = (u - 1) / (u + 1)
+
+     NOTE: u=-1 is converted to y=0 since fe_invert is mod-exp
+  */
+  fe one, um1, up1;
+
+  fe_1(one);
+  fe_sub(um1, u, one);
+  fe_add(up1, u, one);
+  fe_invert(up1, up1);
+  fe_mul(y, um1, up1);
+}
+
+void fe_montx_from_edy(fe u, const fe y)
+{
+    /*
+     u = (1 + y) / (1 - y)
+     
+     NOTE: u=-1 is converted to y=0 since fe_invert is mod-exp
+     */
+    fe one, um1, up1;
+    fe_1(one);
+    fe_sub(um1, one, y);
+    fe_invert(um1, um1);
+    fe_add(up1, y, one);
+    fe_mul(u, um1, up1);
+}
+
+int X25519_Verify(const unsigned char* signature,
+                      const unsigned char* x25519_pubkey,
+                      const unsigned char* msg, const unsigned long msg_len)
+{
+  fe u;
+  fe y;
+  unsigned char ed_pubkey[32];
+  unsigned char *verifybuf  = NULL; /* working buffer */
+  unsigned char *verifybuf2 = NULL; /* working buffer #2 */
+  int result;
+
+  if ((verifybuf = malloc(msg_len + 64)) == 0) {
+   result = -1;
+   goto err;
+  }
+
+  if ((verifybuf2 = malloc(msg_len + 64)) == 0) {
+    result = -1;
+    goto err;
+  }
+
+  /* Convert the Curve25519 public key into an Ed25519 public key.  In
+     particular, convert Curve25519's "montgomery" x-coordinate (u) into an
+     Ed25519 "edwards" y-coordinate:
+
+     y = (u - 1) / (u + 1)
+
+     NOTE: u=-1 is converted to y=0 since fe_invert is mod-exp
+
+     Then move the sign bit into the pubkey from the signature.
+  */
+  fe_frombytes(u, x25519_pubkey);
+  fe_montx_to_edy(y, u);
+  fe_tobytes(ed_pubkey, y);
+
+  /* Copy the sign bit, and remove it from signature */
+  ed_pubkey[31] &= 0x7F;  /* bit should be zero already, but just in case */
+  ed_pubkey[31] |= (signature[63] & 0x80);
+  memmove(verifybuf, signature, 64);
+  verifybuf[63] &= 0x7F;
+
+  memmove(verifybuf+64, msg, msg_len);
+
+  /* Then perform a normal Ed25519 verification, return 0 on success */
+  /* The below call has a strange API: */
+  /* verifybuf = R || S || message */
+  /* verifybuf2 = internal to next call gets a copy of verifybuf, S gets 
+     replaced with pubkey for hashing */
+  result = crypto_sign_open_modified(verifybuf2, verifybuf, 64 + msg_len, ed_pubkey);
+
+  err:
+
+  if (verifybuf != NULL) {
+    free(verifybuf);
+  }
+
+  if (verifybuf2 != NULL) {
+    free(verifybuf2);
+  }
+
+  return result;
+}
+
+int fe_isreduced(const unsigned char* s)
+{
+  fe f;
+  unsigned char strict[32];
+
+  fe_frombytes(f, s);
+  fe_tobytes(strict, f);
+  if (crypto_verify_32_ref(strict, s) != 0)
+    return 0;
+  return 1;
+}
+
+int convert_X_to_Ed(unsigned char* ed, const unsigned char* x)
+{
+  fe u;
+  fe y;
+
+  /* Convert the X25519 public key into an Ed25519 public key.
+
+     y = (u - 1) / (u + 1)
+
+     NOTE: u=-1 is converted to y=0 since fe_invert is mod-exp
+  */
+  if (!fe_isreduced(x))
+      return -1;
+  fe_frombytes(u, x);
+  fe_montx_to_edy(y, u);
+  fe_tobytes((unsigned char*)ed, y);
+  return 0;
+}
+
+int convert_Ed_to_X(unsigned char* x, const unsigned char* ed)
+{
+    fe u;
+    fe y;
+    fe_frombytes(y, ed);
+    fe_montx_from_edy(u, y);
+    fe_tobytes(x, u);
+    if (!fe_isreduced(x))
+        return -1;
+    return 0;
+}
 
