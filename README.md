@@ -1,8 +1,7 @@
-##更新代码
-```shell
-git pull
-git submodule update --init --recursive
-```
+# go-owcrypt
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 ##测试方法：
 该库依赖于OWCrypt库.将OWCrypt库作为一个独立的子模块，可以命名为csource，与其他的go文件存放一起。
 该库的所有测试函数集成在eccset_test.go,设置GOPATH和文件路径，执行go test即可进行测试。
