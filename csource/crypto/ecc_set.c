@@ -204,6 +204,7 @@ uint16_ow ECC_sign(uint8_ow *prikey, uint8_ow *ID, uint16_ow IDlen, uint8_ow *me
             ED25519_Sign(prikey, message, message_len, sig, ECC_CURVE_ED25519);
             ret = SUCCESS;
         }
+            break;
         case ECC_CURVE_X25519:
         {
             /*int REF10_curve25519_sign(unsigned char* signature_out,
