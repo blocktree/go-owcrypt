@@ -338,6 +338,7 @@ Tips：
 ```
 
 - G点的乘加操作： [scalar] * G + pointin
+
    func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte, isinfinity bool)
 
 ```
