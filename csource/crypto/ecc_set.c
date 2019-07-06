@@ -792,3 +792,56 @@ uint16_ow CURVE25519_convert_Ed_to_X(uint8_ow *x, uint8_ow *ed)
         return FAILURE;
     return SUCCESS;
 }
+
+
+uint16_ow MultiSig_key_exchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint32_ow curve_type)
+{
+    switch (curve_type) {
+        case ECC_CURVE_SECP256K1:
+            return secp256k1_multisig_keyexchange_step1(pubkey, tmp_rand, tmp_point);
+            break;
+            
+        default:
+            return ECC_WRONG_TYPE;
+            break;
+    }
+}
+
+uint16_ow MultiSig_key_exchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint8_ow *result, uint32_ow curve_type)
+{
+    switch (curve_type) {
+        case ECC_CURVE_SECP256K1:
+            return secp256k1_multisig_keyexchange_step2(prikey, tmp_rand, tmp_point, result);
+            break;
+            
+        default:
+            return ECC_WRONG_TYPE;
+            break;
+    }
+}
+
+uint16_ow ECC_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point, uint32_ow curve_type)
+{
+    switch (curve_type) {
+        case ECC_CURVE_SECP256K1:
+            return secp256k1_point_add(point1, point2, point);
+            break;
+            
+        default:
+            return ECC_WRONG_TYPE;
+            break;
+    }
+}
+
+uint16_ow ECC_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out, uint32_ow curve_type)
+{
+    switch (curve_type) {
+        case ECC_CURVE_SECP256K1:
+            return secp256k1_point_mul(point_in, scalar, point_out);
+            break;
+            
+        default:
+            return ECC_WRONG_TYPE;
+            break;
+    }
+}

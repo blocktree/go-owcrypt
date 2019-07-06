@@ -75,4 +75,11 @@ uint16_ow secp256k1_point_decompress(uint8_ow *x,uint16_ow x_len,uint8_ow *point
  @paramter[out]pubkey pointer to the recovery public
  */
 uint16_ow secp256k1_recover_pubkey(uint8_ow *sig,uint32_ow sig_len,uint8_ow *msg,uint32_ow msg_len,uint8_ow hash_flag,uint8_ow *pubkey);
+
+
+uint16_ow secp256k1_multisig_keyexchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint8_ow *tmp_point);
+uint16_ow secp256k1_multisig_keyexchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint8_ow *result);
+
+uint16_ow secp256k1_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point);
+uint16_ow secp256k1_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out);
 #endif /* secp256k1_h */

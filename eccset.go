@@ -119,6 +119,9 @@ const (
 	ECC_PUBKEY_ILLEGAL = uint16(0xE001)
 	ECC_WRONG_TYPE     = uint16(0xE002)
 	ECC_MISS_ID        = uint16(0xE003)
+	RAND_IS_NULL       = uint16(0xE004)
+	LENGTH_ERROR       = uint16(0xE005)
+	POINT_AT_INFINITY  = uint16(0xE006)
 )
 
 func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
@@ -518,4 +521,36 @@ func CURVE25519_convert_Ed_to_X(ed []byte) ([]byte, error) {
 	}
 	return nil, errors.New("Invalid ed25519 point to convert!")
 
+}
+
+func MultiSig_key_exchange_step1(pubkey, random []byte, typeChoose uint32) ([]byte, uint16) {
+	ret := make([]byte, 64)
+
+	retCode := C.MultiSig_key_exchange_step1((*C.uchar)(unsafe.Pointer(&pubkey[0])), (*C.uchar)(unsafe.Pointer(&random[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
+
+	return ret, uint16(retCode)
+}
+
+func MultiSig_key_exchange_step2(prikey, random, tmp_point []byte, typeChoose uint32) ([]byte, uint16) {
+	ret := make([]byte, 32)
+
+	retCode := C.MultiSig_key_exchange_step2((*C.uchar)(unsafe.Pointer(&prikey[0])), (*C.uchar)(unsafe.Pointer(&random[0])), (*C.uchar)(unsafe.Pointer(&tmp_point[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
+
+	return ret, uint16(retCode)
+}
+
+func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
+	ret := make([]byte, 64)
+
+	retCode := C.ECC_point_add((*C.uchar)(unsafe.Pointer(&point1[0])), (*C.uchar)(unsafe.Pointer(&point2[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
+
+	return ret, uint16(retCode)
+}
+
+func Point_mul(point_in, scalar []byte, typeChoose uint32) ([]byte, uint16) {
+	ret := make([]byte, 64)
+
+	retCode := C.ECC_point_mul((*C.uchar)(unsafe.Pointer(&point_in[0])), (*C.uchar)(unsafe.Pointer(&scalar[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
+
+	return ret, uint16(retCode)
 }

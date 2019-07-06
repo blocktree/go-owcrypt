@@ -41,7 +41,8 @@
 #define ECC_WRONG_TYPE       0xE002
 #define ECC_MISS_ID          0xE003
 #define RAND_IS_NULL         0xE004
-#define LENGTH_ERROR    0xE005
+#define LENGTH_ERROR         0xE005
+#define POINT_AT_INFINITY    0xE006
 
 /*
  @function:preprocess the random number in ECC signeture
@@ -183,4 +184,8 @@ uint16_ow ECC_recover_pubkey(uint8_ow *sig,uint32_ow sig_len,uint8_ow *msg,uint3
 uint16_ow CURVE25519_convert_X_to_Ed(uint8_ow *ed, uint8_ow *x);
 uint16_ow CURVE25519_convert_Ed_to_X(uint8_ow *x, uint8_ow *ed);
 
+uint16_ow MultiSig_key_exchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint32_ow curve_type);
+uint16_ow MultiSig_key_exchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint8_ow *result, uint32_ow curve_type);
+uint16_ow ECC_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point, uint32_ow curve_type);
+uint16_ow ECC_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out, uint32_ow curve_type);
 #endif /* ecc_set_h */
