@@ -82,4 +82,5 @@ uint16_ow secp256k1_multisig_keyexchange_step2(uint8_ow *prikey, uint8_ow *tmp_r
 
 uint16_ow secp256k1_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point);
 uint16_ow secp256k1_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out);
+
 #endif /* secp256k1_h */

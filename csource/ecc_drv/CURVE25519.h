@@ -45,4 +45,12 @@ void ED25519_get_order(uint8_ow *order);
 int convert_X_to_Ed(unsigned char* ed, const unsigned char* x);
 int convert_Ed_to_X(unsigned char* x, const unsigned char* ed);
 
+
+uint8_ow ED25519_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out);
+uint8_ow ED25519_point_add(uint8_ow *point_1, uint8_ow *point_2, uint8_ow *point_out);
+
+uint16_ow ED25519_multisig_keyexchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint8_ow *tmp_point);
+uint16_ow ED25519_multisig_keyexchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint8_ow *result);
+
+
 #endif /* ED25519_h */

@@ -1,6 +1,7 @@
 package owcrypt
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"reflect"
@@ -729,3 +730,78 @@ func TestPoint_mul(t *testing.T) {
 	fmt.Println(hex.EncodeToString(point_out))
 }
 
+func Test_multisig_key_exchange_ed25519(t *testing.T){
+	priA,_ := hex.DecodeString("68a7a0b84652f90fd4543a6235506b9ca77ed69254ad4c0ea0e05d4a463fd74b")
+	pubA,_ := hex.DecodeString("b1b643a4ca4deeee5c56ee2ddb78f37948cb2afe1eb8f08fe70de7cf11272293")
+	randA := make([]byte, 32)
+	rand.Read(randA)
+
+	priB,_ := hex.DecodeString("08bc185e33964486fdf5c862bd571a576483423ef00d2e9f41631a99493fd74b")
+	pubB,_ := hex.DecodeString("302c3707dace5e5191c481bb6e9467833a2ce8890d5de5ba57e85916ac841316")
+	randB := make([]byte, 32)
+	rand.Read(randB)
+
+	// A step1
+	pointA,retCode := MultiSig_key_exchange_step1(pubA,randA,ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println(hex.EncodeToString(pointA))
+
+	// B step1
+	pointB,retCode := MultiSig_key_exchange_step1(pubB,randB,ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println(hex.EncodeToString(pointB))
+
+	// A step2
+	resultA, retCode := MultiSig_key_exchange_step2(priA, randA, pointB, ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println("resultA : ", hex.EncodeToString(resultA))
+
+	// B step2
+	resultB, retCode := MultiSig_key_exchange_step2(priB, randB, pointA, ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println("resultB : ",hex.EncodeToString(resultB))
+}
+
+
+
+
+
+
+func Test_multisig_key_exchange_ed25519_123(t *testing.T){
+	priA,_ := hex.DecodeString("08bc185e33964486fdf5c862bd571a576483423ef00d2e9f41631a99493fd74b")
+	pubA,_ := hex.DecodeString("302c3707dace5e5191c481bb6e9467833a2ce8890d5de5ba57e85916ac841316")
+	randA,_ := hex.DecodeString("e05336f6dc2e36054c291c32a93004ae177c7c95055bf77cdab550aee7f28547")
+
+	priB,_ := hex.DecodeString("80592a1c5ad121562856c49892272c28a6ac5ca6332d31964c06b27f24d29c42")
+	pubB,_ := hex.DecodeString("f8fb0656c56f55545b6c306a617a46bc77928f9a8c2b2f656fa2942e047381fd")
+	randB ,_ := hex.DecodeString("e05336f6dc2e36054c291c32a93004ae177c7c95055bf77cdab550aee7f28547")
+
+
+	// A step1
+	pointA,retCode := MultiSig_key_exchange_step1(pubA,randA,ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println(hex.EncodeToString(pointA))
+
+	// B step1
+	pointB,retCode := MultiSig_key_exchange_step1(pubB,randB,ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println(hex.EncodeToString(pointB))
+
+	// A step2
+	resultA, retCode := MultiSig_key_exchange_step2(priA, randA, pointB, ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println("resultA : ", hex.EncodeToString(resultA))
+
+	// B step2
+	resultB, retCode := MultiSig_key_exchange_step2(priB, randB, pointA, ECC_CURVE_ED25519)
+
+	fmt.Println(retCode)
+	fmt.Println("resultB : ",hex.EncodeToString(resultB))
+}

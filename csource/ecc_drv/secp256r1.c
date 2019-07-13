@@ -217,3 +217,159 @@ uint16_ow secp256r1_recover_pubkey(uint8_ow *sig,uint32_ow sig_len,uint8_ow *msg
     return ret;
 }
 
+uint16_ow secp256r1_multisig_keyexchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint8_ow *tmp_point)
+{
+    ECC_CURVE_PARAM *curveParam=NULL;
+    ECC_POINT *tmppub_point = NULL;
+    ECC_POINT *pub_point = NULL;
+    
+    tmppub_point = calloc(1, sizeof(ECC_POINT));
+    pub_point = calloc(1, sizeof(ECC_POINT));
+    memcpy(pub_point->x, pubkey, ECC_LEN);
+    memcpy(pub_point->y, pubkey + ECC_LEN, ECC_LEN);
+    
+    curveParam = calloc(1,sizeof(ECC_CURVE_PARAM));
+    curveParam->a = (uint8_ow *)curve_secp256r1_a;
+    curveParam->b = (uint8_ow *)curve_secp256r1_b;
+    curveParam->n =(uint8_ow *)curve_secp256r1_n;
+    curveParam->p =(uint8_ow *)curve_secp256r1_p;
+    curveParam->x = (uint8_ow *)curve_secp256r1_x;
+    curveParam->y =(uint8_ow *)curve_secp256r1_y;
+    //bigrand_get_rand_range(tmp_rand, (uint8_ow*)curve_secp256k1_n, prikey, ECC_LEN, 0, 0);
+    
+    if(1 == point_mul(curveParam, pub_point, tmp_rand, tmppub_point))
+    {
+        free(tmppub_point);
+        free(pub_point);
+        free(curveParam);
+        return POINT_AT_INFINITY;
+    }
+    
+    memcpy(tmp_point, tmppub_point->x, ECC_LEN);
+    memcpy(tmp_point + ECC_LEN, tmppub_point->y, ECC_LEN);
+    
+    free(tmppub_point);
+    free(pub_point);
+    free(curveParam);
+    return SUCCESS;
+}
+
+uint16_ow secp256r1_multisig_keyexchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint8_ow *tmp_point, uint8_ow *result)
+{
+    ECC_CURVE_PARAM *curveParam=NULL;
+    ECC_POINT *in_point = NULL;
+    ECC_POINT *ret_point = NULL;
+    SHA256_CTX *sha_ctx = NULL;
+    
+    in_point = calloc(1, sizeof(ECC_POINT));
+    ret_point = calloc(1, sizeof(ECC_POINT));
+    memcpy(in_point->x, tmp_point, ECC_LEN);
+    memcpy(in_point->y, tmp_point + ECC_LEN, ECC_LEN);
+    
+    curveParam = calloc(1,sizeof(ECC_CURVE_PARAM));
+    curveParam->a = (uint8_ow *)curve_secp256r1_a;
+    curveParam->b = (uint8_ow *)curve_secp256r1_b;
+    curveParam->n =(uint8_ow *)curve_secp256r1_n;
+    curveParam->p =(uint8_ow *)curve_secp256r1_p;
+    curveParam->x = (uint8_ow *)curve_secp256r1_x;
+    curveParam->y =(uint8_ow *)curve_secp256r1_y;
+    
+    if(1 == point_mul(curveParam, in_point, prikey, ret_point))
+    {
+        free(in_point);
+        free(ret_point);
+        free(curveParam);
+        free(sha_ctx);
+        return POINT_AT_INFINITY;
+    }
+    
+    if(1 == point_mul(curveParam, ret_point, tmp_rand, ret_point))
+    {
+        free(in_point);
+        free(ret_point);
+        free(curveParam);
+        free(sha_ctx);
+        return POINT_AT_INFINITY;
+    }
+    
+    sha_ctx = calloc(1, sizeof(SHA256_CTX));
+    sha256_init(sha_ctx);
+    sha256_update(sha_ctx, ret_point->x, ECC_LEN);
+    sha256_update(sha_ctx, ret_point->y, ECC_LEN);
+    sha256_final(sha_ctx, result);
+    
+    free(in_point);
+    free(ret_point);
+    free(curveParam);
+    free(sha_ctx);
+    return SUCCESS;
+}
+
+// point = point1 + point2
+uint16_ow secp256r1_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point)
+{
+    ECC_CURVE_PARAM *curveParam=NULL;
+    ECC_POINT *P1 = NULL, *P2 = NULL, *P = NULL;
+    
+    curveParam = calloc(1,sizeof(ECC_CURVE_PARAM));
+    curveParam->a = (uint8_ow *)curve_secp256r1_a;
+    curveParam->b = (uint8_ow *)curve_secp256r1_b;
+    curveParam->n =(uint8_ow *)curve_secp256r1_n;
+    curveParam->p =(uint8_ow *)curve_secp256r1_p;
+    curveParam->x = (uint8_ow *)curve_secp256r1_x;
+    curveParam->y =(uint8_ow *)curve_secp256r1_y;
+    
+    P1 = calloc(1, sizeof(ECC_POINT));
+    P2 = calloc(1, sizeof(ECC_POINT));
+    P = calloc(1, sizeof(ECC_POINT));
+    
+    memcpy(P1->x, point1, ECC_LEN);
+    memcpy(P1->y, point1 + ECC_LEN, ECC_LEN);
+    
+    memcpy(P2->x, point2, ECC_LEN);
+    memcpy(P2->y, point2 + ECC_LEN, ECC_LEN);
+    
+    point_add(curveParam, P1, P2, P);
+    
+    memcpy(point, P->x, ECC_LEN);
+    memcpy(point + ECC_LEN, P->y, ECC_LEN);
+    
+    free(P1);
+    free(P2);
+    free(P);
+    free(curveParam);
+    return SUCCESS;
+}
+
+
+// point_out = scalar * point_in
+uint16_ow secp256r1_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_out)
+{
+    ECC_CURVE_PARAM *curveParam=NULL;
+    ECC_POINT *Pin = NULL, *Pout = NULL;
+    
+    curveParam = calloc(1,sizeof(ECC_CURVE_PARAM));
+    curveParam->a = (uint8_ow *)curve_secp256r1_a;
+    curveParam->b = (uint8_ow *)curve_secp256r1_b;
+    curveParam->n =(uint8_ow *)curve_secp256r1_n;
+    curveParam->p =(uint8_ow *)curve_secp256r1_p;
+    curveParam->x = (uint8_ow *)curve_secp256r1_x;
+    curveParam->y =(uint8_ow *)curve_secp256r1_y;
+    
+    Pin = calloc(1, sizeof(ECC_POINT));
+    Pout = calloc(1, sizeof(ECC_POINT));
+    
+    memcpy(Pin->x, point_in, ECC_LEN);
+    memcpy(Pin->y, point_in + ECC_LEN, ECC_LEN);
+    
+    point_mul(curveParam, Pin, scalar, Pout);
+    
+    memcpy(point_out, Pout->x, ECC_LEN);
+    memcpy(point_out + ECC_LEN, Pout->y, ECC_LEN);
+    
+    free(Pin);
+    free(Pout);
+    free(curveParam);
+    return SUCCESS;
+}
+

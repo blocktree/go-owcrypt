@@ -800,7 +800,12 @@ uint16_ow MultiSig_key_exchange_step1(uint8_ow *pubkey, uint8_ow *tmp_rand, uint
         case ECC_CURVE_SECP256K1:
             return secp256k1_multisig_keyexchange_step1(pubkey, tmp_rand, tmp_point);
             break;
-            
+        case ECC_CURVE_SECP256R1:
+            return secp256r1_multisig_keyexchange_step1(pubkey, tmp_rand, tmp_point);
+            break;
+        case ECC_CURVE_ED25519:
+            return ED25519_multisig_keyexchange_step1(pubkey, tmp_rand, tmp_point);
+            break;
         default:
             return ECC_WRONG_TYPE;
             break;
@@ -813,7 +818,12 @@ uint16_ow MultiSig_key_exchange_step2(uint8_ow *prikey, uint8_ow *tmp_rand, uint
         case ECC_CURVE_SECP256K1:
             return secp256k1_multisig_keyexchange_step2(prikey, tmp_rand, tmp_point, result);
             break;
-            
+        case ECC_CURVE_SECP256R1:
+            return secp256r1_multisig_keyexchange_step2(prikey, tmp_rand, tmp_point, result);
+            break;
+        case ECC_CURVE_ED25519:
+            return ED25519_multisig_keyexchange_step2(prikey, tmp_rand, tmp_point, result);
+            break;
         default:
             return ECC_WRONG_TYPE;
             break;
@@ -826,7 +836,14 @@ uint16_ow ECC_point_add(uint8_ow *point1, uint8_ow *point2, uint8_ow *point, uin
         case ECC_CURVE_SECP256K1:
             return secp256k1_point_add(point1, point2, point);
             break;
-            
+        case ECC_CURVE_SECP256R1:
+            return secp256r1_point_add(point1, point2, point);
+            break;
+        case ECC_CURVE_ED25519:
+            if(ED25519_point_add(point1, point2, point))
+                return POINT_AT_INFINITY;
+            return SUCCESS;
+            break;
         default:
             return ECC_WRONG_TYPE;
             break;
@@ -839,7 +856,14 @@ uint16_ow ECC_point_mul(uint8_ow *point_in, uint8_ow *scalar, uint8_ow *point_ou
         case ECC_CURVE_SECP256K1:
             return secp256k1_point_mul(point_in, scalar, point_out);
             break;
-            
+        case ECC_CURVE_SECP256R1:
+            return secp256r1_point_mul(point_in, scalar, point_out);
+            break;
+        case ECC_CURVE_ED25519:
+            if(ED25519_point_mul(point_in, scalar, point_out))
+                return POINT_AT_INFINITY;
+            return SUCCESS;
+            break;
         default:
             return ECC_WRONG_TYPE;
             break;

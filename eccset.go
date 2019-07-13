@@ -524,7 +524,13 @@ func CURVE25519_convert_Ed_to_X(ed []byte) ([]byte, error) {
 }
 
 func MultiSig_key_exchange_step1(pubkey, random []byte, typeChoose uint32) ([]byte, uint16) {
-	ret := make([]byte, 64)
+	var size int
+	if typeChoose == ECC_CURVE_ED25519 {
+		size = 32
+	} else {
+		size = 64
+	}
+	ret := make([]byte, size)
 
 	retCode := C.MultiSig_key_exchange_step1((*C.uchar)(unsafe.Pointer(&pubkey[0])), (*C.uchar)(unsafe.Pointer(&random[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
 
@@ -532,7 +538,13 @@ func MultiSig_key_exchange_step1(pubkey, random []byte, typeChoose uint32) ([]by
 }
 
 func MultiSig_key_exchange_step2(prikey, random, tmp_point []byte, typeChoose uint32) ([]byte, uint16) {
-	ret := make([]byte, 32)
+	var size int
+	if typeChoose == ECC_CURVE_ED25519 {
+		size = 32
+	} else {
+		size = 64
+	}
+	ret := make([]byte, size)
 
 	retCode := C.MultiSig_key_exchange_step2((*C.uchar)(unsafe.Pointer(&prikey[0])), (*C.uchar)(unsafe.Pointer(&random[0])), (*C.uchar)(unsafe.Pointer(&tmp_point[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
 
@@ -540,7 +552,31 @@ func MultiSig_key_exchange_step2(prikey, random, tmp_point []byte, typeChoose ui
 }
 
 func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
-	ret := make([]byte, 64)
+	var size int
+	if typeChoose == ECC_CURVE_ED25519 {
+		size = 32
+		if len(point1) != 32 || len(point2) != 32 {
+			return nil, FAILURE
+		}
+	} else {
+		size = 64
+		if len(point1) == 33 {
+			point1 = PointDecompress(point1, typeChoose)[1:]
+		}else if len(point1) == 65 {
+			point1 = point1[1:]
+		}else if len(point1) != 64 {
+			return nil, FAILURE
+		}
+
+		if len(point2) == 33 {
+			point2 = PointDecompress(point2, typeChoose)[1:]
+		}else if len(point2) == 65 {
+			point2 = point2[1:]
+		}else if len(point2) != 64 {
+			return nil,FAILURE
+		}
+	}
+	ret := make([]byte, size)
 
 	retCode := C.ECC_point_add((*C.uchar)(unsafe.Pointer(&point1[0])), (*C.uchar)(unsafe.Pointer(&point2[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
 
@@ -548,7 +584,23 @@ func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
 }
 
 func Point_mul(point_in, scalar []byte, typeChoose uint32) ([]byte, uint16) {
-	ret := make([]byte, 64)
+	var size int
+	if typeChoose == ECC_CURVE_ED25519 {
+		size = 32
+		if len(point_in) != 32 {
+			return nil, FAILURE
+		}
+	} else {
+		size = 64
+		if len(point_in) == 33 {
+			point_in = PointDecompress(point_in, typeChoose)[1:]
+		}else if len(point_in) == 65 {
+			point_in = point_in[1:]
+		} else if  len(point_in) != 64 {
+			return nil, FAILURE
+		}
+	}
+	ret := make([]byte, size)
 
 	retCode := C.ECC_point_mul((*C.uchar)(unsafe.Pointer(&point_in[0])), (*C.uchar)(unsafe.Pointer(&scalar[0])), (*C.uchar)(unsafe.Pointer(&ret[0])), C.uint(typeChoose))
 
