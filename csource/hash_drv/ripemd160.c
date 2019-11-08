@@ -375,6 +375,7 @@ void ripemd160_update(RIPEMD160_CTX *ctx,uint8_ow *msg,uint32_ow msg_len)
     while(msg_len >= 64)
     {
         //sha256_process(ctx, data);
+        memcpy((uint8_ow *)(ctx -> buffer), msg, 64);
         compress(ctx);
         msg += 64;
         msg_len  -= 64;
