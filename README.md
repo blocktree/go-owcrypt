@@ -2,6 +2,20 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+## 更新日志 2020.01.08
+```$xslt
+1. 移除C语言依赖
+2. 移除部分接口的入参长度描述
+        - 签名接口 Signature 的 IDlen 和 message_len
+        - 验签接口 Verify 的 IDlen 和 message_len
+        - 加解密接口对明文和密文长度的描述
+        - 协商类接口的 IDinitiator_len 和 IDresponder_len
+3. 签名接口添加一个输出用于存放v，签名结果目前输出为满足Canical编码规则且S序列化之后的结果。
+4. 不再支持
+        - PreprocessRandomNum
+        - GetCurveOrder
+```
+
 ## go package详情
 ___
 
@@ -92,14 +106,12 @@ Tips：
 ```
 ### 数字签名：
 
-func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, signature []byte, typeChoose uint32) uint16 
+func Signature(prikey []byte, ID []byte, message []byte, signature []byte,v byte, typeChoose uint32) uint16 
 ```
 入参：   
         prikey     ： 私钥
         ID         ： 签名方标识符，仅SM2签名时需要传入
-        IDlen      ： 签名方标识符长度
         message    ： 待签名的消息
-        message_len： 待签名的消息长度
         typeChoose : 算法类型选择，可选参数如下
                             ECC_CURVE_SECP256K1(0xECC00000)
                             ECC_CURVE_SECP256R1(0xECC00001)
@@ -111,6 +123,7 @@ func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_l
 	                    ECC_CURVE_X25519 (0xECC00005)
 出参：
         signature  ： 签名值
+        v          :  rsv格式签名的v
 返回值： 
         uint16类型，如下：
                         SUCCESS(0x0001)                 : 生成成功
@@ -121,7 +134,7 @@ func Signature(prikey []byte, ID []byte, IDlen uint16, message []byte, message_l
 ```
 ### 预置随机数：
 
-func PreprocessRandomNum(rand []byte) (ret uint16)
+[1.1.0版本移除]func PreprocessRandomNum(rand []byte) (ret uint16)
 ```
 入参：
         rand：随机数
@@ -137,16 +150,14 @@ Tips：
 ```
 ### 签名验证：
 
-func Verify(pubkey []byte, ID []byte, IDlen uint16, message []byte, message_len uint16, signature []byte, typeChoose uint32) uint16 
+func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoose uint32) uint16 
 
 ```
 
 入参：
         pubkey     ： 公钥
         ID         ： 待验证方标识符，仅SM2签名时需要传入
-        IDlen      ： 待验证方标识符长度
         message    ： 待验证的消息
-        message_len： 待签名的消息长度
         signature  ： 签名值
         typeChoose : 算法类型选择，可选参数如下
                             ECC_CURVE_SECP256K1(0xECC00000)
@@ -156,7 +167,7 @@ func Verify(pubkey []byte, ID []byte, IDlen uint16, message []byte, message_len 
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
                             ECC_CURVE_ED25519_NORMAL(0xECC00003)
                             ECC_CURVE_ED25519(0xECC00004)
-	                    ECC_CURVE_X25519 (0xECC00005)
+	                        ECC_CURVE_X25519 (0xECC00005)
 出参：   无
 返回值：
         uint16类型， 如下：
@@ -169,12 +180,11 @@ func Verify(pubkey []byte, ID []byte, IDlen uint16, message []byte, message_len 
 ```
 ### 加密：
 
-func Encryption(pubkey []byte, plain []byte, plain_len uint16, cipher []byte, typeChoose uint32) (ret, cipher_len uint16) 
+func Encryption(pubkey []byte, plain []byte, typeChoose uint32) (cipher []byte, ret uint16) 
 ```
 入参：
         pubkey     ：公钥
         plain      ：明文
-        plain_len  ：明文长度
         typeChoose : 算法类型选择，可选参数如下
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
 出参：  
@@ -184,18 +194,16 @@ func Encryption(pubkey []byte, plain []byte, plain_len uint16, cipher []byte, ty
                         SUCCESS(0x0001)                      : 加密成功
                         ECC_PUBKEY_ILLEGAL(0xE001)           : 传入了非法公钥
                         ECC_WRONG_TYPE(0xE002)               : 传入了错误的type   
-        cipher_len： 密文长度(目前架构下，SM2的密文长度为 plain_len + 97)
 Tips：
         目前仅支持国密居推荐sm2参数的加密
 ```
 ### 解密：
 
-func Decryption(prikey []byte, cipher []byte, cipher_len uint16, plain []byte, typeChoose uint32) (ret, plain_len uint16) 
+func Decryption(prikey []byte, cipher []byte, typeChoose uint32) (plain []byte, ret uint16) 
 ```
 入参：
         prikey     ： 私钥
         cipher     ： 密文
-        cipher_len ： 密文长度
         typeChoose ： 算法类型选择，可选参数如下
                             ECC_CURVE_SM2_STANDARD(0xECC00002)
 出参： 
@@ -206,7 +214,6 @@ func Decryption(prikey []byte, cipher []byte, cipher_len uint16, plain []byte, t
                         FAILURE(0x0000)                      : 解密失败，密文非法
                         ECC_PRIKEY_ILLEGAL(0xE000)           : 传入了非法私钥
                         ECC_WRONG_TYPE(0xE002)               : 传入了错误的type
-        plain_len  ： 明文长度(当前架构下，SM2明文长度为cipher_len - 97)
 Tips：
         目前仅支持国密居推荐sm2参数的解密
 ```
@@ -382,7 +389,7 @@ Tips：
         对于EDDSA类曲线算法，由于curve25519的特殊性，此处可用ED25519进行计算，但与其私钥到公钥的计算流程并不一致
 ```
 ### 获取曲线的基域特征
-func GetCurveOrder(typeChoose uint32) []byte
+[1.1.0版本移除]func GetCurveOrder(typeChoose uint32) []byte
 ```
 入参:
         typeChoose : 算法类型选择，可选参数如下
