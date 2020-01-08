@@ -173,10 +173,10 @@ func ScalarMultBaseAdd(point1, scalar, point2 *[32]byte) bool {
 	edwards25519.FeMul(&y, &R.Y, &recip)
 
 	if feIsZero(x) && feIsOne(y) {
-		return false
+		return true
 	}
 	edwards25519.FeToBytes(point2, &y)
 	point2[31] ^= (edwards25519.FeIsNegative(&x) << 7)
 
-	return true
+	return false
 }
