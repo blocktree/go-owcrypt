@@ -83,6 +83,9 @@ func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic
 			r.Mod(r, N)
 			if r.Sign() != 0 {
 				rBytes := r.Bytes()
+				for len(rBytes) < 32  {
+					rBytes = append([]byte{0x00}, rBytes...)
+				}
 				if !((rBytes[0] & 0x80 == 0) && !(rBytes[0] == 0  && (rBytes[1] & 0x80 == 0))) {
 					continue
 				}
@@ -103,6 +106,13 @@ func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic
 			if s.Cmp(halfCurveOrder) > 0{
 				s.Sub(priv.Curve.Params().N, s)
 				v ^= 1
+			}
+			sBytes := s.Bytes()
+			for len(sBytes) < 32  {
+				sBytes = append([]byte{0x00}, sBytes...)
+			}
+			if !((sBytes[0] & 0x80 == 0) && !(sBytes[0] == 0  && (sBytes[1] & 0x80 == 0))) {
+				continue
 			}
 			break
 		}
