@@ -31,6 +31,9 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	case ECC_CURVE_X25519:
 		pubkey, err = eddsa.X25519_genPub(prikey)
 		break
+	case ECC_CURVE_CURVE25519_SHA256:
+		pubkey, err = eddsa.CURVE25519_sha256_genPub(prikey)
+		break
 	case ECC_CURVE_SECP256K1:
 		pubkey, err = genPublicKey(prikey, "secp256k1")
 		break
@@ -68,6 +71,9 @@ func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (sig
 		break
 	case ECC_CURVE_X25519:
 		signature, err = eddsa.X25519_sign(prikey, message)
+		break
+	case ECC_CURVE_CURVE25519_SHA256:
+		signature, err = eddsa.CURVE25519_sha256_sign(prikey, message)
 		break
 	case ECC_CURVE_SECP256K1:
 		signature, v, err = sign(prikey, nil, message, "secp256k1")
@@ -110,6 +116,9 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 		break
 	case ECC_CURVE_X25519:
 		pass = eddsa.X25519_verify( pubkey, message, signature)
+		break
+	case ECC_CURVE_CURVE25519_SHA256:
+		pass = eddsa.CURVE25519_sha256_verify(pubkey, message, signature)
 		break
 	case ECC_CURVE_SECP256K1:
 		pass = verify(pubkey, nil, message, signature, "secp256k1")
