@@ -16,6 +16,7 @@ package owcrypt
 
 import (
 	"errors"
+	"github.com/blocktree/go-owcrypt/bls12_381"
 	"github.com/blocktree/go-owcrypt/eddsa"
 )
 
@@ -42,6 +43,9 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 		break
 	case ECC_CURVE_SM2_STANDARD:
 		pubkey, err = genPublicKey(prikey, "sm2_std")
+		break
+	case ECC_CURVE_BLS12_381:
+		pubkey, err = bls12_381.GenPublicKey(prikey)
 		break
 	default:
 		return nil, ECC_WRONG_TYPE
@@ -83,6 +87,9 @@ func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (sig
 		break
 	case ECC_CURVE_SM2_STANDARD:
 		signature, v, err = sign(prikey, ID, message, "sm2_std")
+		break
+	case ECC_CURVE_BLS12_381:
+		signature, err = bls12_381.Sign(prikey, message)
 		break
 	default:
 		return nil, 0, ECC_WRONG_TYPE
@@ -128,6 +135,9 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 		break
 	case ECC_CURVE_SM2_STANDARD:
 		pass = verify(pubkey, ID, message, signature, "sm2_std")
+		break
+	case ECC_CURVE_BLS12_381:
+		pass = bls12_381.Verify(pubkey, message, signature)
 		break
 	default:
 		return ECC_WRONG_TYPE
@@ -318,6 +328,10 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 		ret, _ := eddsa.ED25519_genPub(scalar)
 		return ret
 		break
+	case ECC_CURVE_BLS12_381:
+		ret, _ := bls12_381.GenPublicKey(scalar)
+		return ret
+		break
 	default:
 		return nil
 	}
@@ -348,6 +362,9 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 			return nil, true
 		}
 		return point2[:], false
+		break
+	case ECC_CURVE_BLS12_381:
+		return bls12_381.ScalarMultBaseAdd(pointin, scalar)
 		break
 	default:
 		return nil, false
