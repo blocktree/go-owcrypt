@@ -2,6 +2,7 @@ package bls12_381
 
 import (
 	"errors"
+	sig "github.com/drand/kyber/sign/bls"
 	"github.com/phoreproject/bls/g1pubs"
 	"math/big"
 )
@@ -37,29 +38,38 @@ func newSK(skBytes []byte) *g1pubs.SecretKey {
 }
 
 func Sign(privateKey, message []byte) ([]byte, error) {
+	pairing := NewBLS12381Suite()
+	scheme := sig.NewSchemeOnG2(pairing)
 	if len(privateKey) != 32 {
 		return nil, errors.New("invalid private key lenth!")
 	}
+	prikey := NewScalar(privateKey)
 
-	sig := g1pubs.Sign(message, newSK(privateKey))
-	sigBytes := sig.Serialize()
-	return sigBytes[:], nil
+	return scheme.Sign(prikey, message)
 }
 
 func Verify(publicKey, message, signature []byte) bool {
+	pairing := NewBLS12381Suite()
+	scheme := sig.NewSchemeOnG2(pairing)
+
 	if len(publicKey) != 48 || len(message) == 0 || len(signature) != 96 {
 		return false
 	}
-	pk, err := newPK(publicKey)
-	if err != nil {
-		return false
-	}
-	sig, err := newSig(signature)
-	if err != nil {
-		return false
-	}
+	pk := NullKyberG1()
+	pk.UnmarshalBinary(publicKey)
+	err := scheme.Verify(pk, message, signature)
 
-	return g1pubs.Verify(message, pk, sig)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func AggregateSignatures(sigs ...[]byte) ([]byte, error) {
+	pairing := NewBLS12381Suite()
+	scheme := sig.NewSchemeOnG2(pairing)
+
+	return scheme.AggregateSignatures(sigs...)
 }
 
 func newPK(pkBytes []byte) (*g1pubs.PublicKey, error){

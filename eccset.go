@@ -44,7 +44,7 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	case ECC_CURVE_SM2_STANDARD:
 		pubkey, err = genPublicKey(prikey, "sm2_std")
 		break
-	case ECC_CURVE_BLS12_381:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG , ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL:
 		pubkey, err = bls12_381.GenPublicKey(prikey)
 		break
 	default:
@@ -88,7 +88,14 @@ func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (sig
 	case ECC_CURVE_SM2_STANDARD:
 		signature, v, err = sign(prikey, ID, message, "sm2_std")
 		break
-	case ECC_CURVE_BLS12_381:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL:
+		message = append([]byte(BASIC_SCHEME_DST), message...)
+		signature, err = bls12_381.Sign(prikey, message)
+		break
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
+		pubkey, _ := GenPubkey(prikey, typeChoose)
+		message = append(pubkey, message...)
+		message = append([]byte(AUG_SCHEME_DST), message...)
 		signature, err = bls12_381.Sign(prikey, message)
 		break
 	default:
@@ -110,6 +117,28 @@ func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (sig
 
 	ret = SUCCESS
 	return
+}
+
+func AggregateSignatures(typeChoose uint32, sigs ...[]byte) ([]byte, uint16) {
+	if len(sigs) == 0 {
+		return nil, FAILURE
+	}
+
+	aggregate := make([]byte, 0)
+	var err error
+	switch typeChoose {
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
+		aggregate, err = bls12_381.AggregateSignatures(sigs...)
+		if err != nil {
+			return nil, FAILURE
+		}
+		break
+	default:
+		return nil, ECC_WRONG_TYPE
+		break
+	}
+
+	return aggregate, SUCCESS
 }
 
 func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoose uint32) uint16 {
@@ -136,7 +165,13 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 	case ECC_CURVE_SM2_STANDARD:
 		pass = verify(pubkey, ID, message, signature, "sm2_std")
 		break
-	case ECC_CURVE_BLS12_381:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL:
+		message = append([]byte(BASIC_SCHEME_DST), message...)
+		pass = bls12_381.Verify(pubkey, message, signature)
+		break
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
+		message = append(pubkey, message...)
+		message = append([]byte(AUG_SCHEME_DST), message...)
 		pass = bls12_381.Verify(pubkey, message, signature)
 		break
 	default:
@@ -328,7 +363,7 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 		ret, _ := eddsa.ED25519_genPub(scalar)
 		return ret
 		break
-	case ECC_CURVE_BLS12_381:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
 		ret, _ := bls12_381.GenPublicKey(scalar)
 		return ret
 		break
@@ -363,7 +398,7 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 		}
 		return point2[:], false
 		break
-	case ECC_CURVE_BLS12_381:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
 		return bls12_381.ScalarMultBaseAdd(pointin, scalar)
 		break
 	default:
