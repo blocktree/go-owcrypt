@@ -36,8 +36,8 @@ fmt.Println(err)
 }
 
 func Test_add_sig(t *testing.T) {
-	sig1, _ := hex.DecodeString("809f00c133e64d4929de228292a80307b8f5195fc74b7824e73c04b008e21d8c6ff9c4701f5f659ae1c11320e3cc6b4b03a2cd3260987add74fa2aec4ba1da19d40824b4c1c175c94e1926961ff800ff9f4e4ee50260434173c458ece65f7c35")
-	sig2, _ := hex.DecodeString("8717efd4477d434669bd29133827047fc2ed657847e42d7aa6670416c7bfcad1fe43d9676de39d2e31bc4cba2e7c16ff12d2e386fcca5f9accae7012b84abbf1a48a0af65b0705d4b22cd7b0f8b20a5384279f3cf7dcf2513e43be5dcc4d079c")
+	sig2, _ := hex.DecodeString("809f00c133e64d4929de228292a80307b8f5195fc74b7824e73c04b008e21d8c6ff9c4701f5f659ae1c11320e3cc6b4b03a2cd3260987add74fa2aec4ba1da19d40824b4c1c175c94e1926961ff800ff9f4e4ee50260434173c458ece65f7c35")
+	sig1, _ := hex.DecodeString("8717efd4477d434669bd29133827047fc2ed657847e42d7aa6670416c7bfcad1fe43d9676de39d2e31bc4cba2e7c16ff12d2e386fcca5f9accae7012b84abbf1a48a0af65b0705d4b22cd7b0f8b20a5384279f3cf7dcf2513e43be5dcc4d079c")
 	pairing := NewBLS12381Suite()
 	scheme := sig.NewSchemeOnG2(pairing)
 
@@ -46,3 +46,4 @@ func Test_add_sig(t *testing.T) {
 	fmt.Println(hex.EncodeToString(ret))
 
 }
+

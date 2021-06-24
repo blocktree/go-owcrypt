@@ -14,7 +14,9 @@
  */
 package owcrypt
 
+import "C"
 import (
+	"encoding/hex"
 	"errors"
 	"github.com/blocktree/go-owcrypt/bls12_381"
 	"github.com/blocktree/go-owcrypt/eddsa"
@@ -406,6 +408,150 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 	}
 	return nil, false
 }
+
+func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
+	if typeChoose == ECC_CURVE_ED25519 {
+		if len(point1) != 32 || len(point2) != 32 {
+			return nil, FAILURE
+		}
+	} else {
+		if len(point1) == 33 {
+			point1 = PointDecompress(point1, typeChoose)[1:]
+		}else if len(point1) == 65 {
+			point1 = point1[1:]
+		}else if len(point1) != 64 {
+			return nil, FAILURE
+		}
+
+		if len(point2) == 33 {
+			point2 = PointDecompress(point2, typeChoose)[1:]
+		}else if len(point2) == 65 {
+			point2 = point2[1:]
+		}else if len(point2) != 64 {
+			return nil,FAILURE
+		}
+	}
+	switch typeChoose {
+	case ECC_CURVE_SECP256K1:
+		point, is_infinity := Add(point1, point2, "secp256k1")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	case ECC_CURVE_SECP256R1:
+		point, is_infinity := Add(point1, point2, "secp256r1")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	case ECC_CURVE_SM2_STANDARD:
+		point, is_infinity := Add(point1, point2, "sm2_std")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	case ECC_CURVE_ED25519:
+		var P1, P2, P [32]byte
+		copy(P1[:], point1)
+		copy(P2[:], point2)
+		infinity := eddsa.Point_add(&P1, &P2, &P)
+		if infinity {
+			return nil, FAILURE
+		}
+		return P[:], SUCCESS
+		break
+
+	default:
+		return nil, FAILURE
+	}
+	return nil, FAILURE
+}
+
+func Point_mul(pointin, scalar []byte, typeChoose uint32) ([]byte, uint16) {
+	if typeChoose == ECC_CURVE_ED25519 {
+		if len(pointin) != 32 || len(scalar) != 32 {
+			return nil, FAILURE
+		}
+	} else {
+		if len(pointin) == 33 {
+			pointin = PointDecompress(pointin, typeChoose)[1:]
+		}else if len(pointin) == 65 {
+			pointin = pointin[1:]
+		}else if len(pointin) != 64 {
+			return nil, FAILURE
+		}
+
+		if len(scalar) != 32 {
+			return nil,FAILURE
+		}
+	}
+	switch typeChoose {
+	case ECC_CURVE_SECP256K1:
+		point, is_infinity := Mul(pointin, scalar, "secp256k1")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	case ECC_CURVE_SECP256R1:
+		point, is_infinity := Mul(pointin, scalar, "secp256r1")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	case ECC_CURVE_SM2_STANDARD:
+		point, is_infinity := Mul(pointin, scalar, "sm2_std")
+		if is_infinity {
+			return nil, FAILURE
+		}
+		return point, SUCCESS
+		break
+	//case ECC_CURVE_ED25519:
+	//	var P1, P2, P [32]byte
+	//	copy(P1[:], pointin)
+	//	copy(P2[:], scalar)
+	//	infinity := eddsa.Point_add(&P1, &P2, &P)
+	//	if infinity {
+	//		return nil, FAILURE
+	//	}
+	//	return P[:], SUCCESS
+	//	break
+
+	default:
+		return nil, FAILURE
+	}
+	return nil, FAILURE
+}
+
+func GetCurveOrder(typeChoose uint32) []byte {
+	switch typeChoose {
+	case ECC_CURVE_SECP256K1:
+		order, _ := hex.DecodeString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")
+		return order
+		break
+	case ECC_CURVE_SECP256R1:
+		order, _ := hex.DecodeString("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551")
+		return order
+		break
+	case ECC_CURVE_SM2_STANDARD:
+		order, _ := hex.DecodeString("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123")
+		return order
+		break
+	case ECC_CURVE_ED25519:
+		order, _  := hex.DecodeString("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed")
+		return order
+		break
+	default:
+		return nil
+	}
+
+	return nil
+}
+
 
 func PointCompress(point []byte, typeChoose uint32) []byte {
 	if typeChoose != ECC_CURVE_SECP256K1 && typeChoose != ECC_CURVE_SECP256R1 && typeChoose != ECC_CURVE_SM2_STANDARD {

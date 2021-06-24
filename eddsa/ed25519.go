@@ -180,3 +180,29 @@ func ScalarMultBaseAdd(point1, scalar, point2 *[32]byte) bool {
 
 	return false
 }
+
+func Point_add(point1, point2, point *[32]byte) bool {
+	var (
+		P1, P2 edwards25519.ExtendedGroupElement
+		R edwards25519.ProjectiveGroupElement
+		recip, x, y edwards25519.FieldElement
+		one   [32]byte
+	)
+
+	one[0] = 1
+	P1.FromBytes(point1)
+	P2.FromBytes(point2)
+
+	edwards25519.GePointAddVarTime(&R, &one, &P1, &one, &P2)
+	edwards25519.FeInvert(&recip, &R.Z)
+	edwards25519.FeMul(&x, &R.X, &recip)
+	edwards25519.FeMul(&y, &R.Y, &recip)
+
+	if feIsZero(x) && feIsOne(y) {
+		return true
+	}
+	edwards25519.FeToBytes(point, &y)
+	point[31] ^= (edwards25519.FeIsNegative(&x) << 7)
+
+	return false
+}

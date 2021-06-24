@@ -352,3 +352,98 @@ func MulBaseG_Add(pointin, scalar []byte, name string) (point []byte, isinfinity
 	return append(x, y...), false
 }
 
+func Add(point1, point2 []byte, name string) (point []byte, isinfinity bool) {
+	var curve *curveParam
+	var k1curve *secp256k1Curve
+	var sm2Curve *sm2_stdCurve
+
+	var x_big, y_big *big.Int
+
+	p1 := new(ecdsa.PublicKey)
+	p1.X = new(big.Int).SetBytes(point1[:32])
+	p1.Y = new(big.Int).SetBytes(point1[32:])
+
+	p2 := new(ecdsa.PublicKey)
+	p2.X = new(big.Int).SetBytes(point2[:32])
+	p2.Y = new(big.Int).SetBytes(point2[32:])
+
+	if name == "secp256k1" {
+		k1curve = secp256k1
+		x_big, y_big = k1curve.Add(p1.X, p1.Y, p2.X, p2.Y)
+	} else if name == "sm2_std" {
+		sm2Curve = sm2_std
+		x_big, y_big = sm2Curve.Add(p1.X, p1.Y, p2.X, p2.Y)
+	} else if name == "secp256r1"{ // ecdsa
+		curve = secp256r1
+		x_big, y_big = curve.Add(p1.X, p1.Y, p2.X, p2.Y)
+	} else {
+		return nil, false
+	}
+
+	if x_big.Cmp(big.NewInt(0)) == 0 && x_big.Cmp(big.NewInt(0)) == 0 {
+		return nil, true
+	}
+
+	x := x_big.Bytes()
+
+	for len(x) < 32 {
+		x = append([]byte{0x00}, x...)
+	}
+
+	y := y_big.Bytes()
+
+	for len(y) < 32 {
+		y = append([]byte{0x00}, y...)
+	}
+	return append(x, y...), false
+}
+
+func Mul(pointin, scalar []byte, name string) (point []byte, isinfinity bool) {
+
+	var curve *curveParam
+	var k1curve *secp256k1Curve
+	var sm2Curve *sm2_stdCurve
+	privateKeyBig := new(big.Int).SetBytes(scalar)
+	priv := new(ecdsa.PrivateKey)
+	p := new(ecdsa.PublicKey)
+	p.X = new(big.Int).SetBytes(pointin[:32])
+	p.Y = new(big.Int).SetBytes(pointin[32:])
+
+	priv.D = privateKeyBig
+	if name == "secp256k1" {
+		k1curve = secp256k1
+		priv.PublicKey.Curve = k1curve
+		p.Curve = k1curve
+		priv.PublicKey.X, priv.PublicKey.Y = k1curve.ScalarMult(p.X, p.Y, scalar)
+	} else if name == "sm2_std" {
+		sm2Curve = sm2_std
+		priv.PublicKey.Curve = sm2Curve
+		p.Curve = sm2Curve
+		priv.PublicKey.X, priv.PublicKey.Y = sm2Curve.ScalarMult(p.X, p.Y, scalar)
+	} else if name == "secp256r1"{ // ecdsa
+		curve = secp256r1
+		priv.PublicKey.Curve = curve
+		p.Curve = curve
+		priv.D = privateKeyBig
+		priv.PublicKey.X, priv.PublicKey.Y = curve.ScalarMult(p.X, p.Y, scalar)
+	} else {
+		return nil, false
+	}
+
+	if priv.PublicKey.X.Cmp(big.NewInt(0)) == 0 && priv.PublicKey.Y.Cmp(big.NewInt(0)) == 0 {
+		return nil, true
+	}
+
+	x := priv.PublicKey.X.Bytes()
+
+	for len(x) < 32 {
+		x = append([]byte{0x00}, x...)
+	}
+
+	y := priv.PublicKey.Y.Bytes()
+
+	for len(y) < 32 {
+		y = append([]byte{0x00}, y...)
+	}
+	return append(x, y...), false
+}

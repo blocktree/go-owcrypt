@@ -802,6 +802,66 @@ func GeDoubleScalarMultVartime(r *ProjectiveGroupElement, a *[32]byte, A *Extend
 	}
 }
 
+func GePointAddVarTime(r *ProjectiveGroupElement, a *[32]byte, A *ExtendedGroupElement, b *[32]byte, BB *ExtendedGroupElement) {
+	var aSlide, bSlide [256]int8
+	var Ai [8]CachedGroupElement
+	var BBi [8]CachedGroupElement
+	var t CompletedGroupElement
+	var u, A2, B2 ExtendedGroupElement
+	var i int
+
+	slide(&aSlide, a)
+	slide(&bSlide, b)
+
+	A.ToCached(&Ai[0])
+	A.Double(&t)
+	t.ToExtended(&A2)
+	for i := 0; i < 7; i++ {
+		geAdd(&t, &A2, &Ai[i])
+		t.ToExtended(&u)
+		u.ToCached(&Ai[i+1])
+	}
+
+	BB.ToCached(&BBi[0])
+	BB.Double(&t)
+	t.ToExtended(&B2)
+	for i := 0; i < 7; i++ {
+		geAdd(&t, &B2, &BBi[i])
+		t.ToExtended(&u)
+		u.ToCached(&BBi[i+1])
+	}
+
+	r.Zero()
+
+	for i = 255; i >= 0; i-- {
+		if aSlide[i] != 0 || bSlide[i] != 0 {
+			break
+		}
+	}
+
+	for ; i >= 0; i-- {
+		r.Double(&t)
+
+		if aSlide[i] > 0 {
+			t.ToExtended(&u)
+			geAdd(&t, &u, &Ai[aSlide[i]/2])
+		} else if aSlide[i] < 0 {
+			t.ToExtended(&u)
+			geSub(&t, &u, &Ai[(-aSlide[i])/2])
+		}
+
+		if bSlide[i] > 0 {
+			t.ToExtended(&u)
+			geAdd(&t, &u, &BBi[bSlide[i]/2])
+		} else if bSlide[i] < 0 {
+			t.ToExtended(&u)
+			geSub(&t, &u, &BBi[(-bSlide[i])/2])
+		}
+
+		t.ToProjective(r)
+	}
+}
+
 func equal(b, c int32) int32 {
 	x := uint32(b ^ c)
 	x--
