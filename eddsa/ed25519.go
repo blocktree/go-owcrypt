@@ -15,6 +15,7 @@
 package eddsa
 
 import (
+	"crypto/rand"
 	"crypto/sha512"
 	"crypto/subtle"
 	"errors"
@@ -59,9 +60,9 @@ func ED25519_sign(prikey, message []byte) ([]byte, error) {
 	expandedSecretKey[0] &= 248
 	expandedSecretKey[31] &= 63
 	expandedSecretKey[31] |= 64
-
+	rand.Read(digest1[:])
 	h := sha512.New()
-	h.Write(digest1[32:])
+	h.Write(digest1[:])
 	h.Write(message)
 	h.Sum(messageDigest[:0])
 

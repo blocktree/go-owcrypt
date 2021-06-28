@@ -258,3 +258,24 @@ func Test_ed25519_add(t *testing.T) {
 	fmt.Println(retcode)
 	fmt.Println(hex.EncodeToString(point))
 }
+
+func Test_ed(t *testing.T) {
+	prikey,_ := hex.DecodeString("186fdc45db17672d005622038f4c9e1c424acee661108fc70adee9fb7871a556")
+
+	fmt.Println(hex.EncodeToString(prikey))
+
+	pubkey, _ := GenPubkey(prikey, ECC_CURVE_ED25519)
+	fmt.Println(hex.EncodeToString(pubkey))
+
+	msg := []byte{1,2,3}
+
+	sig, _, _ := Signature(prikey, nil, msg, ECC_CURVE_ED25519)
+
+	fmt.Println(hex.EncodeToString(sig))
+
+	pass := Verify(pubkey, nil, msg, sig, ECC_CURVE_ED25519_NORMAL)
+
+	fmt.Println(pass)
+}
+
+
