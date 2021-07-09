@@ -4,112 +4,111 @@ import (
 	"crypto/cipher"
 	"crypto/sha256"
 	"encoding/hex"
+	"github.com/blocktree/go-owcrypt/bls12_381/bls"
 	"io"
 	"strings"
 
 	"github.com/drand/kyber"
 	"github.com/drand/kyber/group/mod"
-	bls12381 "github.com/kilic/bls12-381"
 )
 
 // Domain comes from the ciphersuite used by the RFC of this name compatible
 // with the paired library > v18
 var Domain = []byte("BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_AUG_")
 
-// KyberG2 is a kyber.Point holding a G2 point on BLS12-381 curve
-type KyberG2 struct {
-	p *bls12381.PointG2
+type OwcryptG2 struct {
+	p *bls.PointG2
 }
 
-func NullKyberG2() *KyberG2 {
-	var p bls12381.PointG2
-	return newKyberG2(&p)
+func NullOwcryptG2() *OwcryptG2 {
+	var p bls.PointG2
+	return newOwcryptG2(&p)
 }
 
-func newKyberG2(p *bls12381.PointG2) *KyberG2 {
-	return &KyberG2{p: p}
+func newOwcryptG2(p *bls.PointG2) *OwcryptG2 {
+	return &OwcryptG2{p: p}
 }
 
-func (k *KyberG2) Equal(k2 kyber.Point) bool {
-	return bls12381.NewG2().Equal(k.p, k2.(*KyberG2).p)
+func (k *OwcryptG2) Equal(k2 kyber.Point) bool {
+	return bls.NewG2(nil).Equal(k.p, k2.(*OwcryptG2).p)
 }
 
-func (k *KyberG2) Null() kyber.Point {
-	return newKyberG2(bls12381.NewG2().Zero())
+func (k *OwcryptG2) Null() kyber.Point {
+	return newOwcryptG2(bls.NewG2(nil).Zero())
 }
 
-func (k *KyberG2) Base() kyber.Point {
-	return newKyberG2(bls12381.NewG2().One())
+func (k *OwcryptG2) Base() kyber.Point {
+	return newOwcryptG2(bls.NewG2(nil).One())
 }
 
-func (k *KyberG2) Pick(rand cipher.Stream) kyber.Point {
+func (k *OwcryptG2) Pick(rand cipher.Stream) kyber.Point {
 	var dst, src [32]byte
 	rand.XORKeyStream(dst[:], src[:])
 	return k.Hash(dst[:])
 }
 
-func (k *KyberG2) Set(q kyber.Point) kyber.Point {
-	k.p.Set(q.(*KyberG2).p)
+func (k *OwcryptG2) Set(q kyber.Point) kyber.Point {
+	k.p.Set(q.(*OwcryptG2).p)
 	return k
 }
 
-func (k *KyberG2) Clone() kyber.Point {
-	var p bls12381.PointG2
+func (k *OwcryptG2) Clone() kyber.Point {
+	var p bls.PointG2
 	p.Set(k.p)
-	return newKyberG2(&p)
+	return newOwcryptG2(&p)
 }
 
-func (k *KyberG2) EmbedLen() int {
+func (k *OwcryptG2) EmbedLen() int {
 	panic("bls12-381: unsupported operation")
 }
 
-func (k *KyberG2) Embed(data []byte, rand cipher.Stream) kyber.Point {
+func (k *OwcryptG2) Embed(data []byte, rand cipher.Stream) kyber.Point {
 	panic("bls12-381: unsupported operation")
 }
 
-func (k *KyberG2) Data() ([]byte, error) {
+func (k *OwcryptG2) Data() ([]byte, error) {
 	panic("bls12-381: unsupported operation")
 }
 
-func (k *KyberG2) Add(a, b kyber.Point) kyber.Point {
-	aa := a.(*KyberG2)
-	bb := b.(*KyberG2)
-	bls12381.NewG2().Add(k.p, aa.p, bb.p)
+func (k *OwcryptG2) Add(a, b kyber.Point) kyber.Point {
+	aa := a.(*OwcryptG2)
+	bb := b.(*OwcryptG2)
+	bls.NewG2(nil).Add(k.p, aa.p, bb.p)
 	return k
 }
 
-func (k *KyberG2) Sub(a, b kyber.Point) kyber.Point {
-	aa := a.(*KyberG2)
-	bb := b.(*KyberG2)
-	bls12381.NewG2().Sub(k.p, aa.p, bb.p)
+func (k *OwcryptG2) Sub(a, b kyber.Point) kyber.Point {
+	aa := a.(*OwcryptG2)
+	bb := b.(*OwcryptG2)
+	bls.NewG2(nil).Sub(k.p, aa.p, bb.p)
 	return k
 }
 
-func (k *KyberG2) Neg(a kyber.Point) kyber.Point {
-	aa := a.(*KyberG2)
-	bls12381.NewG2().Neg(k.p, aa.p)
+func (k *OwcryptG2) Neg(a kyber.Point) kyber.Point {
+	aa := a.(*OwcryptG2)
+	bls.NewG2(nil).Neg(k.p, aa.p)
 	return k
 }
 
-func (k *KyberG2) Mul(s kyber.Scalar, q kyber.Point) kyber.Point {
+func (k *OwcryptG2) Mul(s kyber.Scalar, q kyber.Point) kyber.Point {
 	if q == nil {
-		q = NullKyberG2().Base()
+		q = NullOwcryptG2().Base()
 	}
-	bls12381.NewG2().MulScalar(k.p, q.(*KyberG2).p, &s.(*mod.Int).V)
+	bls.NewG2(nil).MulScalar(k.p, q.(*OwcryptG2).p, &s.(*mod.Int).V)
 	return k
 }
 
-func (k *KyberG2) MarshalBinary() ([]byte, error) {
-	return bls12381.NewG2().ToCompressed(k.p), nil
+func (k *OwcryptG2) MarshalBinary() ([]byte, error) {
+	return bls.NewG2(nil).ToCompressed(k.p), nil
 }
 
-func (k *KyberG2) UnmarshalBinary(buff []byte) error {
+func (k *OwcryptG2) UnmarshalBinary(buff []byte) error {
 	var err error
-	k.p, err = bls12381.NewG2().FromCompressed(buff)
+	k.p, err = bls.NewG2(nil).FromCompressed(buff)
 	return err
 }
 
-func (k *KyberG2) MarshalTo(w io.Writer) (int, error) {
+func (k *OwcryptG2) MarshalTo(w io.Writer) (int, error) {
 	buf, err := k.MarshalBinary()
 	if err != nil {
 		return 0, err
@@ -117,7 +116,7 @@ func (k *KyberG2) MarshalTo(w io.Writer) (int, error) {
 	return w.Write(buf)
 }
 
-func (k *KyberG2) UnmarshalFrom(r io.Reader) (int, error) {
+func (k *OwcryptG2) UnmarshalFrom(r io.Reader) (int, error) {
 	buf := make([]byte, k.MarshalSize())
 	n, err := io.ReadFull(r, buf)
 	if err != nil {
@@ -126,11 +125,11 @@ func (k *KyberG2) UnmarshalFrom(r io.Reader) (int, error) {
 	return n, k.UnmarshalBinary(buf)
 }
 
-func (k *KyberG2) MarshalSize() int {
+func (k *OwcryptG2) MarshalSize() int {
 	return 96
 }
 
-func (k *KyberG2) String() string {
+func (k *OwcryptG2) String() string {
 	b, _ := k.MarshalBinary()
 	return "bls12-381.G1: " + hex.EncodeToString(b)
 }
@@ -140,12 +139,12 @@ const (
 	aug_scheme_dst = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_AUG_"
 )
 
-func (k *KyberG2) Hash(m []byte) kyber.Point {
+func (k *OwcryptG2) Hash(m []byte) kyber.Point {
 	if strings.Index(string(m), basic_scheme_dst) == 0 {
-		pg2, _ := bls12381.NewG2().HashToCurve(m[len(basic_scheme_dst):], m[:len(basic_scheme_dst)])
+		pg2, _ := bls.NewG2(nil).HashToCurve(m[len(basic_scheme_dst):], m[:len(basic_scheme_dst)])
 		k.p = pg2
 	} else if strings.Index(string(m), aug_scheme_dst) == 0 {
-		pg2, _ := bls12381.NewG2().HashToCurve(m[len(aug_scheme_dst):], m[:len(aug_scheme_dst)])
+		pg2, _ := bls.NewG2(nil).HashToCurve(m[len(aug_scheme_dst):], m[:len(aug_scheme_dst)])
 		k.p = pg2
 	}
 
@@ -158,6 +157,6 @@ func sha256Hash(in []byte) []byte {
 	return h.Sum(nil)
 }
 
-func (k *KyberG2) IsInCorrectGroup() bool {
-	return bls12381.NewG2().InCorrectSubgroup(k.p)
+func (k *OwcryptG2) IsInCorrectGroup() bool {
+	return bls.NewG2(nil).InCorrectSubgroup(k.p)
 }

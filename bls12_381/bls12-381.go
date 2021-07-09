@@ -55,7 +55,7 @@ func Verify(publicKey, message, signature []byte) bool {
 	if len(publicKey) != 48 || len(message) == 0 || len(signature) != 96 {
 		return false
 	}
-	pk := NullKyberG1()
+	pk := NullOwcryptG1()
 	pk.UnmarshalBinary(publicKey)
 	err := scheme.Verify(pk, message, signature)
 
