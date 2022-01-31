@@ -58,7 +58,7 @@ func fermatInverse(k, N *big.Int) *big.Int {
 	return new(big.Int).Exp(k, nMinus2, N)
 }
 
-func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic.Curve, e *big.Int) (r, s *big.Int, v byte,  err error) {
+func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic.Curve, e *big.Int) (r, s *big.Int, v byte, err error) {
 	N := c.Params().N
 	if N.Sign() == 0 {
 		return nil, nil, 0, errors.New("Invalid param!")
@@ -83,10 +83,10 @@ func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic
 			r.Mod(r, N)
 			if r.Sign() != 0 {
 				rBytes := r.Bytes()
-				for len(rBytes) < 32  {
+				for len(rBytes) < 32 {
 					rBytes = append([]byte{0x00}, rBytes...)
 				}
-				if !((rBytes[0] & 0x80 == 0) && !(rBytes[0] == 0  && (rBytes[1] & 0x80 == 0))) {
+				if !((rBytes[0]&0x80 == 0) && !(rBytes[0] == 0 && (rBytes[1]&0x80 == 0))) {
 					continue
 				}
 				if ry.Mod(ry, big.NewInt(2)).Cmp(big.NewInt(1)) == 0 {
@@ -103,15 +103,15 @@ func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic
 		s.Mod(s, N) // N != 0
 		if s.Sign() != 0 {
 			halfCurveOrder := new(big.Int).Div(priv.Curve.Params().N, big.NewInt(2))
-			if s.Cmp(halfCurveOrder) > 0{
+			if s.Cmp(halfCurveOrder) > 0 {
 				s.Sub(priv.Curve.Params().N, s)
 				v ^= 1
 			}
 			sBytes := s.Bytes()
-			for len(sBytes) < 32  {
+			for len(sBytes) < 32 {
 				sBytes = append([]byte{0x00}, sBytes...)
 			}
-			if !((sBytes[0] & 0x80 == 0) && !(sBytes[0] == 0  && (sBytes[1] & 0x80 == 0))) {
+			if !((sBytes[0]&0x80 == 0) && !(sBytes[0] == 0 && (sBytes[1]&0x80 == 0))) {
 				continue
 			}
 			break
@@ -120,7 +120,7 @@ func signGeneric(priv *ecdsa.PrivateKey, csprng *cipher.StreamReader, c elliptic
 	return
 }
 
-func signecdsa(rand io.Reader, priv *ecdsa.PrivateKey, hash []byte) (r, s *big.Int,v byte, err error) {
+func signecdsa(rand io.Reader, priv *ecdsa.PrivateKey, hash []byte) (r, s *big.Int, v byte, err error) {
 
 	//randutil.MaybeReadByte(rand)
 
@@ -146,7 +146,7 @@ func signecdsa(rand io.Reader, priv *ecdsa.PrivateKey, hash []byte) (r, s *big.I
 	// Create an AES-CTR instance to use as a CSPRNG.
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, nil,0, err
+		return nil, nil, 0, err
 	}
 
 	// Create a CSPRNG that xors a stream of zeros with
@@ -159,7 +159,7 @@ func signecdsa(rand io.Reader, priv *ecdsa.PrivateKey, hash []byte) (r, s *big.I
 	// See [NSA] 3.4.1
 	c := priv.PublicKey.Curve
 	e := hashToInt(hash, c)
-	r, s,v, err = signGeneric(priv, &csprng, c, e)
+	r, s, v, err = signGeneric(priv, &csprng, c, e)
 	return
 }
 
@@ -181,7 +181,6 @@ func hashToInt(hash []byte, c elliptic.Curve) *big.Int {
 const (
 	aesIV = "IV for ECDSA CTR"
 )
-
 
 func verifyesdsa(pub *ecdsa.PublicKey, hash []byte, r, s *big.Int) bool {
 	// See [NSA] 3.4.2

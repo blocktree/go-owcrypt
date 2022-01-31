@@ -20,6 +20,7 @@ import (
 	"errors"
 	"github.com/blocktree/go-owcrypt/bls12_381"
 	"github.com/blocktree/go-owcrypt/eddsa"
+	"github.com/blocktree/go-owcrypt/pasta"
 )
 
 func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
@@ -46,8 +47,11 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	case ECC_CURVE_SM2_STANDARD:
 		pubkey, err = genPublicKey(prikey, "sm2_std")
 		break
-	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG , ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL:
+	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL:
 		pubkey, err = bls12_381.GenPublicKey(prikey)
+		break
+	case ECC_CURVE_PASTA:
+		pubkey, err = pasta.GenPublicKey(prikey)
 		break
 	default:
 		return nil, ECC_WRONG_TYPE
@@ -66,7 +70,7 @@ func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {
 	return
 }
 
-func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (signature []byte,v byte, ret uint16)  {
+func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (signature []byte, v byte, ret uint16) {
 	var err error
 	switch typeChoose {
 	case ECC_CURVE_ED25519_NORMAL:
@@ -100,13 +104,16 @@ func Signature(prikey []byte, ID []byte, message []byte, typeChoose uint32) (sig
 		message = append([]byte(AUG_SCHEME_DST), message...)
 		signature, err = bls12_381.Sign(prikey, message)
 		break
+	case ECC_CURVE_PASTA:
+		signature, err = pasta.Sign(prikey, message)
+		break
 	default:
 		return nil, 0, ECC_WRONG_TYPE
 	}
 
 	if err != nil {
 		if err == ErrPrivateKeyIllegal {
-			return nil, 0,  ECC_PRIKEY_ILLEGAL
+			return nil, 0, ECC_PRIKEY_ILLEGAL
 		}
 		if err == ErrUnknownCurve {
 			return nil, 0, ECC_WRONG_TYPE
@@ -153,7 +160,7 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 		pass = eddsa.ED25519_verify(pubkey, message, signature)
 		break
 	case ECC_CURVE_X25519:
-		pass = eddsa.X25519_verify( pubkey, message, signature)
+		pass = eddsa.X25519_verify(pubkey, message, signature)
 		break
 	case ECC_CURVE_CURVE25519_SHA256:
 		pass = eddsa.CURVE25519_sha256_verify(pubkey, message, signature)
@@ -176,6 +183,9 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 		message = append([]byte(AUG_SCHEME_DST), message...)
 		pass = bls12_381.Verify(pubkey, message, signature)
 		break
+	case ECC_CURVE_PASTA:
+		pass = pasta.Verify(pubkey, message, signature)
+		break
 	default:
 		return ECC_WRONG_TYPE
 	}
@@ -186,7 +196,7 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 	return FAILURE
 }
 
-func Encryption(pubkey []byte, plain []byte, typeChoose uint32) (cipher []byte, ret uint16)  {
+func Encryption(pubkey []byte, plain []byte, typeChoose uint32) (cipher []byte, ret uint16) {
 
 	var err error
 
@@ -203,7 +213,7 @@ func Encryption(pubkey []byte, plain []byte, typeChoose uint32) (cipher []byte, 
 		return nil, ECC_PUBKEY_ILLEGAL
 		break
 	case ErrMessageIllegal:
-		return  nil, MESSAGE_ILLEGAL
+		return nil, MESSAGE_ILLEGAL
 		break
 	case ErrUnknownCurve:
 		return nil, ECC_WRONG_TYPE
@@ -230,7 +240,7 @@ func Decryption(prikey []byte, cipher []byte, typeChoose uint32) (plain []byte, 
 		return nil, ECC_PRIKEY_ILLEGAL
 		break
 	case ErrMessageIllegal:
-		return  nil, MESSAGE_ILLEGAL
+		return nil, MESSAGE_ILLEGAL
 		break
 	case ErrUnknownCurve:
 		return nil, ECC_WRONG_TYPE
@@ -247,24 +257,24 @@ func KeyAgreement_initiator_step1(typeChoose uint32) (tmpPrikeyInitiator, tmpPub
 	return
 }
 
-func KeyAgreement_initiator_step2(	IDinitiator []byte,
-									IDresponder []byte,
-									prikeyInitiator []byte,
-									pubkeyInitiator []byte,
-									pubkeyResponder []byte,
-									tmpPrikeyInitiator []byte,
-									tmpPubkeyInitiator []byte,
-									tmpPubkeyResponder []byte,
-									Sin []byte,
-									keylen uint16,
-									typeChoose uint32) (key, Sout []byte, ret uint16) {
+func KeyAgreement_initiator_step2(IDinitiator []byte,
+	IDresponder []byte,
+	prikeyInitiator []byte,
+	pubkeyInitiator []byte,
+	pubkeyResponder []byte,
+	tmpPrikeyInitiator []byte,
+	tmpPubkeyInitiator []byte,
+	tmpPubkeyResponder []byte,
+	Sin []byte,
+	keylen uint16,
+	typeChoose uint32) (key, Sout []byte, ret uint16) {
 
 	if typeChoose != ECC_CURVE_SM2_STANDARD {
 		return nil, nil, ECC_WRONG_TYPE
 	}
 
 	var err error
-	key, Sout, err = sm2_std_ka_initiator_step2(IDinitiator, IDresponder,prikeyInitiator, pubkeyInitiator, pubkeyResponder, tmpPrikeyInitiator, tmpPubkeyInitiator, tmpPubkeyResponder, Sin, keylen)
+	key, Sout, err = sm2_std_ka_initiator_step2(IDinitiator, IDresponder, prikeyInitiator, pubkeyInitiator, pubkeyResponder, tmpPrikeyInitiator, tmpPubkeyInitiator, tmpPubkeyResponder, Sin, keylen)
 	if err != nil {
 		ret = FAILURE
 		return
@@ -274,14 +284,14 @@ func KeyAgreement_initiator_step2(	IDinitiator []byte,
 	return
 }
 
-func KeyAgreement_responder_step1(	IDinitiator []byte,
-									IDresponder []byte,
-									prikeyResponder []byte,
-									pubkeyResponder []byte,
-									pubkeyInitiator []byte,
-									tmpPubkeyInitiator []byte,
-									keylen uint16,
-									typeChoose uint32) (key, tmpPubkeyResponder, Sinner, Souter []byte, ret uint16) {
+func KeyAgreement_responder_step1(IDinitiator []byte,
+	IDresponder []byte,
+	prikeyResponder []byte,
+	pubkeyResponder []byte,
+	pubkeyInitiator []byte,
+	tmpPubkeyInitiator []byte,
+	keylen uint16,
+	typeChoose uint32) (key, tmpPubkeyResponder, Sinner, Souter []byte, ret uint16) {
 
 	if typeChoose != ECC_CURVE_SM2_STANDARD {
 		ret = ECC_WRONG_TYPE
@@ -301,16 +311,15 @@ func KeyAgreement_responder_step1(	IDinitiator []byte,
 	return
 }
 
-
-func KeyAgreement_responder_ElGamal_step1(	IDinitiator []byte,
-											IDresponder []byte,
-											prikeyResponder []byte,
-											pubkeyResponder []byte,
-											pubkeyInitiator []byte,
-											tmpPubkeyInitiator []byte,
-											keylen uint16,
-											random []byte,
-											typeChoose uint32) (key, tmpPubkeyResponder, Sinner, Souter []byte, ret uint16) {
+func KeyAgreement_responder_ElGamal_step1(IDinitiator []byte,
+	IDresponder []byte,
+	prikeyResponder []byte,
+	pubkeyResponder []byte,
+	pubkeyInitiator []byte,
+	tmpPubkeyInitiator []byte,
+	keylen uint16,
+	random []byte,
+	typeChoose uint32) (key, tmpPubkeyResponder, Sinner, Souter []byte, ret uint16) {
 
 	if typeChoose != ECC_CURVE_SM2_STANDARD {
 		ret = ECC_WRONG_TYPE
@@ -369,6 +378,10 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 		ret, _ := bls12_381.GenPublicKey(scalar)
 		return ret
 		break
+	case ECC_CURVE_PASTA:
+		ret, _ := pasta.GenPublicKey(scalar)
+		return PointCompress(ret, typeChoose)
+		break
 	default:
 		return nil
 	}
@@ -376,7 +389,7 @@ func Point_mulBaseG(scalar []byte, typeChoose uint32) []byte {
 }
 
 func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte, isinfinity bool) {
-	if scalar == nil || len(scalar) != 32{
+	if scalar == nil || len(scalar) != 32 {
 		return nil, false
 	}
 
@@ -403,6 +416,9 @@ func Point_mulBaseG_add(pointin, scalar []byte, typeChoose uint32) (point []byte
 	case ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG:
 		return bls12_381.ScalarMultBaseAdd(pointin, scalar)
 		break
+	case ECC_CURVE_PASTA:
+		pointout, _ := pasta.PointMulBaseGAdd(pointin, scalar)
+		return pointout, false
 	default:
 		return nil, false
 	}
@@ -417,18 +433,18 @@ func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
 	} else {
 		if len(point1) == 33 {
 			point1 = PointDecompress(point1, typeChoose)[1:]
-		}else if len(point1) == 65 {
+		} else if len(point1) == 65 {
 			point1 = point1[1:]
-		}else if len(point1) != 64 {
+		} else if len(point1) != 64 {
 			return nil, FAILURE
 		}
 
 		if len(point2) == 33 {
 			point2 = PointDecompress(point2, typeChoose)[1:]
-		}else if len(point2) == 65 {
+		} else if len(point2) == 65 {
 			point2 = point2[1:]
-		}else if len(point2) != 64 {
-			return nil,FAILURE
+		} else if len(point2) != 64 {
+			return nil, FAILURE
 		}
 	}
 	switch typeChoose {
@@ -463,7 +479,10 @@ func Point_add(point1, point2 []byte, typeChoose uint32) ([]byte, uint16) {
 		}
 		return P[:], SUCCESS
 		break
-
+	case ECC_CURVE_PASTA:
+		pout, _ := pasta.PointAdd(point1, point2)
+		return pout, SUCCESS
+		break
 	default:
 		return nil, FAILURE
 	}
@@ -478,14 +497,14 @@ func Point_mul(pointin, scalar []byte, typeChoose uint32) ([]byte, uint16) {
 	} else {
 		if len(pointin) == 33 {
 			pointin = PointDecompress(pointin, typeChoose)[1:]
-		}else if len(pointin) == 65 {
+		} else if len(pointin) == 65 {
 			pointin = pointin[1:]
-		}else if len(pointin) != 64 {
+		} else if len(pointin) != 64 {
 			return nil, FAILURE
 		}
 
 		if len(scalar) != 32 {
-			return nil,FAILURE
+			return nil, FAILURE
 		}
 	}
 	switch typeChoose {
@@ -520,7 +539,10 @@ func Point_mul(pointin, scalar []byte, typeChoose uint32) ([]byte, uint16) {
 	//	}
 	//	return P[:], SUCCESS
 	//	break
-
+	case ECC_CURVE_PASTA:
+		pout, _ := pasta.PointMul(pointin, scalar)
+		return pout, SUCCESS
+		break
 	default:
 		return nil, FAILURE
 	}
@@ -542,7 +564,11 @@ func GetCurveOrder(typeChoose uint32) []byte {
 		return order
 		break
 	case ECC_CURVE_ED25519:
-		order, _  := hex.DecodeString("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed")
+		order, _ := hex.DecodeString("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed")
+		return order
+		break
+	case ECC_CURVE_PASTA:
+		order, _ := hex.DecodeString("40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001")
 		return order
 		break
 	default:
@@ -552,9 +578,8 @@ func GetCurveOrder(typeChoose uint32) []byte {
 	return nil
 }
 
-
 func PointCompress(point []byte, typeChoose uint32) []byte {
-	if typeChoose != ECC_CURVE_SECP256K1 && typeChoose != ECC_CURVE_SECP256R1 && typeChoose != ECC_CURVE_SM2_STANDARD {
+	if typeChoose != ECC_CURVE_SECP256K1 && typeChoose != ECC_CURVE_SECP256R1 && typeChoose != ECC_CURVE_SM2_STANDARD && typeChoose != ECC_CURVE_PASTA {
 		return nil
 	}
 
@@ -570,7 +595,7 @@ func PointCompress(point []byte, typeChoose uint32) []byte {
 		return nil
 	}
 
-	if point[63] % 2 == 0 {
+	if point[63]%2 == 0 {
 		return append([]byte{0x02}, point[:32]...)
 	} else {
 		return append([]byte{0x03}, point[:32]...)
@@ -598,6 +623,13 @@ func PointDecompress(point []byte, typeChoose uint32) []byte {
 		break
 	case ECC_CURVE_SM2_STANDARD:
 		ret, err := sm2_std_decompress(point)
+		if err != nil {
+			return nil
+		}
+		return ret
+		break
+	case ECC_CURVE_PASTA:
+		ret, err := pasta.PointDecompress(point)
 		if err != nil {
 			return nil
 		}

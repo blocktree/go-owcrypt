@@ -11,7 +11,7 @@ func Test_BLS_12381_basic(t *testing.T) {
 	prikey, _ := hex.DecodeString("1078e74b73ca24796808f4d856c0bdf8a40483f41e52765640968b89fc73700d")
 	msg, _ := hex.DecodeString("d396bc63594bff4dab6d91b59efa8491eacbd8003f6fff9b2594a058ca0844156348539d4a324732b0dad6f2f4c3cbb11f596552c6f1e088543031e7085174c4ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb")
 	except_pub := "8eaee6cd97fc5b2f4aede9f257d61aa48768180561cf470eabba8ffbf8a356035e5b0993cf238096b1dc16603088f84f"
-	except_sig  := "a80bceb6e5ea9e8bfd1fca8318e9170af4941ed232336c4ed56430b645683290ca4e936aacd4d2b1a4abfef9045e034f00c22d5ede8b15b7bf30f431727a51d30a27eaab47e223fbd1b8ab60ff0023f93d7c1dc3b0aa3ca9919c4dcba7219c48"
+	except_sig := "a80bceb6e5ea9e8bfd1fca8318e9170af4941ed232336c4ed56430b645683290ca4e936aacd4d2b1a4abfef9045e034f00c22d5ede8b15b7bf30f431727a51d30a27eaab47e223fbd1b8ab60ff0023f93d7c1dc3b0aa3ca9919c4dcba7219c48"
 	pubkey, err := GenPubkey(prikey, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL)
 	if err != SUCCESS {
 		t.Error("gen key failed")
@@ -21,7 +21,7 @@ func Test_BLS_12381_basic(t *testing.T) {
 		t.Error("public key wrong")
 	}
 
-	sig, _, err := Signature(prikey,nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL)
+	sig, _, err := Signature(prikey, nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_NUL)
 	if err != SUCCESS {
 		t.Error("sign failed")
 		return
@@ -39,17 +39,13 @@ func Test_BLS_12381_basic(t *testing.T) {
 
 	fmt.Println("=====SUCCESS=====")
 
-
 }
-
-
-
 
 func Test_BLS_12381_aug(t *testing.T) {
 	prikey, _ := hex.DecodeString("1078e74b73ca24796808f4d856c0bdf8a40483f41e52765640968b89fc73700d")
 	msg, _ := hex.DecodeString("d396bc63594bff4dab6d91b59efa8491eacbd8003f6fff9b2594a058ca0844156348539d4a324732b0dad6f2f4c3cbb11f596552c6f1e088543031e7085174c4ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb")
 	except_pub := "8eaee6cd97fc5b2f4aede9f257d61aa48768180561cf470eabba8ffbf8a356035e5b0993cf238096b1dc16603088f84f"
-	except_sig  := "809f00c133e64d4929de228292a80307b8f5195fc74b7824e73c04b008e21d8c6ff9c4701f5f659ae1c11320e3cc6b4b03a2cd3260987add74fa2aec4ba1da19d40824b4c1c175c94e1926961ff800ff9f4e4ee50260434173c458ece65f7c35"
+	except_sig := "809f00c133e64d4929de228292a80307b8f5195fc74b7824e73c04b008e21d8c6ff9c4701f5f659ae1c11320e3cc6b4b03a2cd3260987add74fa2aec4ba1da19d40824b4c1c175c94e1926961ff800ff9f4e4ee50260434173c458ece65f7c35"
 	pubkey, err := GenPubkey(prikey, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 	if err != SUCCESS {
 		t.Error("failed")
@@ -59,7 +55,7 @@ func Test_BLS_12381_aug(t *testing.T) {
 		t.Error("public key wrong")
 	}
 
-	sig, _, err := Signature(prikey,nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
+	sig, _, err := Signature(prikey, nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 	if err != SUCCESS {
 		t.Error("failed")
 		return
@@ -108,7 +104,7 @@ const CHIA_GROUP_ORDER = "73EDA753299D7D483339D80809A1D80553BDA402FFFE5BFEFFFFFF
 const CHIA_DEFAULT_HIDDEN_PUZZLE_HASH = "711d6c4e32c92e53179b199484cf8c897542bc57f2b22582799f9d657eec4699"
 
 func chia_complement_bytes_to_bigint(data []byte) *big.Int {
-	if data[0] & 0x80 == 0 {
+	if data[0]&0x80 == 0 {
 		return new(big.Int).SetBytes(data)
 	}
 	data[0] &= 0x7F
@@ -117,7 +113,7 @@ func chia_complement_bytes_to_bigint(data []byte) *big.Int {
 	data_bytes := data_big.Bytes()
 	data_bytes_len := len(data_bytes)
 	if data_bytes_len < 32 {
-		for i := 0; i < 32 -data_bytes_len; i ++ {
+		for i := 0; i < 32-data_bytes_len; i++ {
 			data_bytes = append([]byte{0}, data_bytes...)
 		}
 	}
@@ -129,7 +125,6 @@ func chia_complement_bytes_to_bigint(data []byte) *big.Int {
 	return data_big.Neg(data_big)
 }
 
-
 func chia_calculate_synthetic_offset(public_key, hidden_puzzle_hash []byte) *big.Int {
 	offset := chia_complement_bytes_to_bigint(Hash(append(public_key, hidden_puzzle_hash...), 0, HASH_ALG_SHA256))
 	fmt.Println("offset :  ", offset.Text(10))
@@ -138,7 +133,6 @@ func chia_calculate_synthetic_offset(public_key, hidden_puzzle_hash []byte) *big
 	offset = offset.Mod(offset, groupOrder)
 	return offset
 }
-
 
 func chia_calculate_synthetic_secret_key(prikey []byte) []byte {
 	default_hidden_puzzle_hash, _ := hex.DecodeString(CHIA_DEFAULT_HIDDEN_PUZZLE_HASH)
@@ -166,12 +160,12 @@ func Test_BLS_12381_aug_tmp(t *testing.T) {
 
 	synthetic_secret_key, _ = hex.DecodeString("505edad01152517ab5b43e0d8e349304dee143626b2553021ae588bb6a946f7c")
 	msg, _ := hex.DecodeString("8daca921cf806da7c4ae31fa388340326681c32cb43e64f456399d6b572d8676f216bda1dff44181f125d0bd994cf6c8dd4fa0124aeb1929f64dcc263bbed481ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb ")
-	sig,_, ret := Signature(synthetic_secret_key, nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
+	sig, _, ret := Signature(synthetic_secret_key, nil, msg, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 
 	fmt.Println(ret)
 	fmt.Println(hex.EncodeToString(sig))
 
-	pass := Verify(pub,nil,msg,sig,ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
+	pass := Verify(pub, nil, msg, sig, ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 
 	fmt.Println(pass)
 	//if hex.EncodeToString(pubkey) != except_pub {
@@ -196,20 +190,18 @@ func Test_BLS_12381_aug_tmp(t *testing.T) {
 	//fmt.Println("=====SUCCESS=====")
 }
 
-
 func Test_puzzle_hash(t *testing.T) {
 	public_key, _ := hex.DecodeString("ae1cc8cb032229ff92261067e5136e003fff0a468c490b073926c32744196c7931bb29d83b9788f61da5eed5ad394c5a")
 	hidden_puzzle_hash, _ := hex.DecodeString(CHIA_DEFAULT_HIDDEN_PUZZLE_HASH)
-	offset := chia_calculate_synthetic_offset(public_key,hidden_puzzle_hash)
+	offset := chia_calculate_synthetic_offset(public_key, hidden_puzzle_hash)
 
 	pubkey_for_exp, _ := GenPubkey(offset.Bytes(), ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 
 	fmt.Println(hex.EncodeToString(pubkey_for_exp))
 
-	ret,_ := Point_mulBaseG_add(public_key,offset.Bytes(),ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
+	ret, _ := Point_mulBaseG_add(public_key, offset.Bytes(), ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG)
 	fmt.Println(hex.EncodeToString(ret))
 }
-
 
 func Test_tmp(t *testing.T) {
 	pri0, _ := hex.DecodeString("4622543fac0ab44cb84a9d40e69ced1431afdfd08b80af1314b5d604c4d08410")
@@ -237,7 +229,7 @@ func Test_tmp(t *testing.T) {
 	fmt.Println("ret : ", ret)
 	fmt.Println("chk2 : ", hex.EncodeToString(chk2))
 
-	sig, _ := AggregateSignatures(ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG,sig0, sig1, sig2)
+	sig, _ := AggregateSignatures(ECC_CURVE_BLS12381_G2_XMD_SHA_256_SSWU_RO_AUG, sig0, sig1, sig2)
 
 	fmt.Println(hex.EncodeToString(sig))
 }
@@ -250,24 +242,24 @@ func Test_conv(t *testing.T) {
 }
 
 func Test_ed25519_add(t *testing.T) {
-	point1,_ := hex.DecodeString("302c3707dace5e5191c481bb6e9467833a2ce8890d5de5ba57e85916ac841316")
+	point1, _ := hex.DecodeString("302c3707dace5e5191c481bb6e9467833a2ce8890d5de5ba57e85916ac841316")
 	point2, _ := hex.DecodeString("f8fb0656c56f55545b6c306a617a46bc77928f9a8c2b2f656fa2942e047381fd")
 	//fb6e804d8178e2c407eac41a2a36df76e83547c63a7d202270bd32bceb038e7a
-	point,retcode := Point_add(point1, point2, ECC_CURVE_ED25519)
+	point, retcode := Point_add(point1, point2, ECC_CURVE_ED25519)
 
 	fmt.Println(retcode)
 	fmt.Println(hex.EncodeToString(point))
 }
 
 func Test_ed(t *testing.T) {
-	prikey,_ := hex.DecodeString("186fdc45db17672d005622038f4c9e1c424acee661108fc70adee9fb7871a556")
+	prikey, _ := hex.DecodeString("186fdc45db17672d005622038f4c9e1c424acee661108fc70adee9fb7871a556")
 
 	fmt.Println(hex.EncodeToString(prikey))
 
 	pubkey, _ := GenPubkey(prikey, ECC_CURVE_ED25519)
 	fmt.Println(hex.EncodeToString(pubkey))
 
-	msg := []byte{1,2,3}
+	msg := []byte{1, 2, 3}
 
 	sig, _, _ := Signature(prikey, nil, msg, ECC_CURVE_ED25519)
 
@@ -278,4 +270,9 @@ func Test_ed(t *testing.T) {
 	fmt.Println(pass)
 }
 
+func TestSecp256k1Curve_ScalarMult(t *testing.T) {
+	ptivate, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
+	public, _ := GenPubkey(ptivate, ECC_CURVE_SECP256K1)
 
+	fmt.Println(hex.EncodeToString(public))
+}
