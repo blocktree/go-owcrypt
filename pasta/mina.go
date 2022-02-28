@@ -3,8 +3,9 @@ package pasta
 import "encoding/json"
 
 type MinaMessage struct {
-	Transaction []Field  `json:"transaction"`
-	SpongeIV    [3]Field `json:"spongeIV"`
+	TransactionPrefix []Field  `json:"transactionPrefix"`
+	TransactionSuffix []Field  `json:"transactionSuffix"`
+	SpongeIV          [3]Field `json:"spongeIV"`
 }
 
 func (mm MinaMessage) ToBytes() []byte {
@@ -26,10 +27,13 @@ func NewMinaMessage(input []byte) (*MinaMessage, error) {
 
 func MessageHash(pub []byte, r_mont [4]uint64, message MinaMessage) []byte {
 	var pubAffine Affine
+	var transaction []Field
 	pubAffine.FromBigEndianBytes(pub)
-	message.Transaction = append(message.Transaction, pubAffine.X, pubAffine.Y, r_mont)
+	transaction = append(transaction, message.TransactionPrefix...)
+	transaction = append(transaction, pubAffine.X, pubAffine.Y, r_mont)
+	transaction = append(transaction, message.TransactionSuffix...)
 
 	ctx := Poseidon3WInit(message.SpongeIV[:])
-	PoseidonUpdate(&ctx, message.Transaction)
+	PoseidonUpdate(&ctx, transaction)
 	return PoseidonDigest(&ctx)
 }

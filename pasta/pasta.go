@@ -42,6 +42,7 @@ func Sign(privateKey, msg []byte) ([]byte, error) {
 
 	var r Affine
 	AffineScalarMul(&r, k, AffineOne)
+
 	rBytes := r.ToBigEndianBytes()[:32]
 
 	if FieldIsOdd(r.Y) {
@@ -49,6 +50,7 @@ func Sign(privateKey, msg []byte) ([]byte, error) {
 		FiatPastaFqCopy(&tmp, k.ToU64Array())
 		ScalarNegate(&k, tmp)
 	}
+
 	mm, err := NewMinaMessage(msg)
 	if err != nil {
 		return nil, err
@@ -85,7 +87,7 @@ func Verify(publicKey, msg, sig []byte) bool {
 	}
 	hash := MessageHash(publicKey, r_mont, *mm)
 	var e Scalar
-	
+
 	e.Set(BigEndianBytesToFqMontgomeryArray(hash))
 
 	var g Group

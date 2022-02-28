@@ -21,8 +21,9 @@ func TestMina(t *testing.T) {
 	}
 
 	var mm = pasta.MinaMessage{
-		Transaction: transForTest,
-		SpongeIV:    ivForTest,
+		TransactionPrefix: transForTest,
+		TransactionSuffix: transForTest,
+		SpongeIV:          ivForTest,
 	}
 
 	message := mm.ToBytes()
