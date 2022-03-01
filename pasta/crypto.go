@@ -116,9 +116,9 @@ type Compressed struct {
 func (c Compressed) ToBigEndianBytes() []byte {
 	var out []byte
 	if c.IsOdd {
-		out = append(out, 0x02)
-	} else {
 		out = append(out, 0x03)
+	} else {
+		out = append(out, 0x02)
 	}
 
 	return append(out, c.X.ToBigEndianBytes()...)
@@ -129,9 +129,9 @@ func (c *Compressed) FromBigEndianBytes(p []byte) error {
 		return errors.New("invalid input length p")
 	}
 	if p[0] == 0x02 {
-		c.IsOdd = true
-	} else if p[0] == 0x03 {
 		c.IsOdd = false
+	} else if p[0] == 0x03 {
+		c.IsOdd = true
 	} else {
 		errors.New("invalid input data p, first byte is not 0x02 or 0x03")
 	}
