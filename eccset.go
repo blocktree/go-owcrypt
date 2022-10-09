@@ -14,7 +14,6 @@
  */
 package owcrypt
 
-import "C"
 import (
 	"encoding/hex"
 	"errors"
