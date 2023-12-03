@@ -44,7 +44,7 @@ func genPublicKey(privateKey []byte, name string) ([]byte, error) {
 		return nil, ErrPrivateKeyIllegal
 	}
 
-	var curve *curveParam
+	var curve *secp256r1Curve
 	var k1curve *secp256k1Curve
 	var sm2Curve *sm2_stdCurve
 	privateKeyBig := new(big.Int).SetBytes(privateKey)
@@ -118,7 +118,7 @@ func sign(privateKey, ID, hash []byte, name string) ([]byte, byte, error) {
 		return nil, 0, ErrMessageIllegal
 	}
 
-	var curve *curveParam
+	var curve *secp256r1Curve
 	var k1curve *secp256k1Curve
 	var sm2Curve *sm2_stdCurve
 	privateKeyBig := new(big.Int).SetBytes(privateKey)
@@ -288,7 +288,7 @@ func decrypt(prikey, cipher []byte, name string) ([]byte, error) {
 
 func MulBaseG_Add(pointin, scalar []byte, name string) (point []byte, isinfinity bool) {
 
-	var curve *curveParam
+	var curve *secp256r1Curve
 	var k1curve *secp256k1Curve
 	var sm2Curve *sm2_stdCurve
 	privateKeyBig := new(big.Int).SetBytes(scalar)
@@ -353,7 +353,7 @@ func MulBaseG_Add(pointin, scalar []byte, name string) (point []byte, isinfinity
 }
 
 func Add(point1, point2 []byte, name string) (point []byte, isinfinity bool) {
-	var curve *curveParam
+	var curve *secp256r1Curve
 	var k1curve *secp256k1Curve
 	var sm2Curve *sm2_stdCurve
 
@@ -373,14 +373,14 @@ func Add(point1, point2 []byte, name string) (point []byte, isinfinity bool) {
 	} else if name == "sm2_std" {
 		sm2Curve = sm2_std
 		x_big, y_big = sm2Curve.Add(p1.X, p1.Y, p2.X, p2.Y)
-	} else if name == "secp256r1"{ // ecdsa
+	} else if name == "secp256r1" { // ecdsa
 		curve = secp256r1
 		x_big, y_big = curve.Add(p1.X, p1.Y, p2.X, p2.Y)
 	} else {
 		return nil, false
 	}
 
-	if x_big.Cmp(big.NewInt(0)) == 0 && x_big.Cmp(big.NewInt(0)) == 0 {
+	if (x_big.Cmp(big.NewInt(0)) == 0) && x_big.Cmp(big.NewInt(0)) == 0 {
 		return nil, true
 	}
 
@@ -400,7 +400,7 @@ func Add(point1, point2 []byte, name string) (point []byte, isinfinity bool) {
 
 func Mul(pointin, scalar []byte, name string) (point []byte, isinfinity bool) {
 
-	var curve *curveParam
+	var curve *secp256r1Curve
 	var k1curve *secp256k1Curve
 	var sm2Curve *sm2_stdCurve
 	privateKeyBig := new(big.Int).SetBytes(scalar)
@@ -420,7 +420,7 @@ func Mul(pointin, scalar []byte, name string) (point []byte, isinfinity bool) {
 		priv.PublicKey.Curve = sm2Curve
 		p.Curve = sm2Curve
 		priv.PublicKey.X, priv.PublicKey.Y = sm2Curve.ScalarMult(p.X, p.Y, scalar)
-	} else if name == "secp256r1"{ // ecdsa
+	} else if name == "secp256r1" { // ecdsa
 		curve = secp256r1
 		priv.PublicKey.Curve = curve
 		p.Curve = curve

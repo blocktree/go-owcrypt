@@ -29,9 +29,9 @@ type secp256k1Curve struct {
 
 func initsecp256k1Param() {
 	secp256k1 = &secp256k1Curve{elliptic.CurveParams{Name: "secp256k1"}}
-	secp256k1.P, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16)
-	secp256k1.N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
-	secp256k1.B, _  = new(big.Int).SetString("0000000000000000000000000000000000000000000000000000000000000007", 16)
+	secp256k1.P, _ = new(big.Int).SetString("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", 16)
+	secp256k1.N, _ = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	secp256k1.B, _ = new(big.Int).SetString("0000000000000000000000000000000000000000000000000000000000000007", 16)
 	secp256k1.Gx, _ = new(big.Int).SetString("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16)
 	secp256k1.Gy, _ = new(big.Int).SetString("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16)
 	secp256k1.BitSize = 256
@@ -238,7 +238,7 @@ func (curve *secp256k1Curve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
 }
 
 func secp256k1_decompress(in []byte) ([]byte, error) {
-	if in == nil || len(in) != 33 || (in[0] != 0x02 && in[0] != 0x03){
+	if in == nil || len(in) != 33 || (in[0] != 0x02 && in[0] != 0x03) {
 		return nil, errors.New("invalid input")
 	}
 
@@ -300,7 +300,7 @@ func secp256k1_recover_public(sig, msg []byte) ([]byte, error) {
 	G.X = curve.Gx
 	G.Y = curve.Gy
 
-	for k := 0; k < 2; k ++ {
+	for k := 0; k < 2; k++ {
 		if k == 0 {
 			buf2[0] = 0x02
 		}
@@ -352,13 +352,3 @@ func secp256k1_recover_public(sig, msg []byte) ([]byte, error) {
 	}
 	return nil, errors.New("failed to decompress")
 }
-
-
-
-
-
-
-
-
-
-
